@@ -1,29 +1,13 @@
-FROM python:3.12-slim
+# Dockerfile
+FROM amazon/aws-lambda-python:3.11
 
-# Prevent Python from writing .pyc files and buffer logs
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# 1) install deps into the Lambda task root
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt -t ${LAMBDA_TASK_ROOT}
 
-WORKDIR /app
+# 2) copy your code
+COPY . ${LAMBDA_TASK_ROOT}
 
-# System deps (optional, in case you need build tools for some libs)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
- && rm -rf /var/lib/apt/lists/*
-
-# Copy dependency files first for caching
-COPY requirements.txt setup.py ./
-
-# Install pip + deps
-RUN pip install --upgrade pip \
- && pip install -r requirements.txt \
- && pip install -e .
-
-# Copy the rest of your app
-COPY . .
-
-# Expose the app port
-EXPOSE 5000
-
-# Run with Gunicorn (production WSGI server)
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "wsgi:app"]
+# 3) set the Lambda handler: <module>.<function>
+#    Do NOT use a web server here; Lambda invokes this handler directly.
+CMD ["lambda_handler.handler"]
