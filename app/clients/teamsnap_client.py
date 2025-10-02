@@ -99,6 +99,19 @@ class TeamSnapClient:
         except (KeyError, IndexError, TypeError):
             return {"registered_teams": []}
 
+    def get_user_id(self) -> Optional[str]:
+        """
+        Fetches the TeamSnap user ID of the current user.
+        """
+        response = self._get("/me")
+
+        try:
+            user_data = response["collection"]["items"][0]["data"]
+            data_dict = {item["name"]: item["value"] for item in user_data}
+            return data_dict.get("id")
+        except (KeyError, IndexError, TypeError):
+            return None
+
     def get_team_info(self, team_id: str) -> Dict[str, Any]:
         """
         Fetches information about a specific team and returns the team name.

@@ -1,4 +1,4 @@
-from app.db.models.club import Club
+from app.db.models.club import Club, OAuthState, TeamSnapAccount
 from app.db.models.team import Team
 from app.db.models.opponent import Opponent
 from app.db.models.location import Location
