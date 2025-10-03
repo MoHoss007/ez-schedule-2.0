@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from app.api.utils import _cfg
-from db.session import get_session
+from app.db.session import get_session
 from datetime import datetime, timezone, timedelta
 from app.db.models import Club, OAuthState
 from urllib.parse import urlencode
