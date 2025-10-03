@@ -1,6 +1,6 @@
 from flask import Blueprint, redirect, request
 from app.api.utils import _cfg, encrypt
-from db.session import get_session
+from app.db.session import get_session
 from datetime import datetime, timezone, timedelta
 from app.db.models import Club, OAuthState, TeamSnapAccount
 from app.clients.teamsnap_client import TeamSnapClient
