@@ -29,7 +29,7 @@ def _pkce_pair():
     return code_verifier, challenge
 
 
-@bp.post("/draft", methods=["POST"])
+@bp.post("/draft")
 def create_draft_club():
     """
     Frontend posts minimal club info BEFORE OAuth:
