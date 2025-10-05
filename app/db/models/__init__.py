@@ -6,3 +6,4 @@ from app.db.models.event import Event
 from app.db.models.unique_location import UniqueLocation
 from app.db.models.unique_division import UniqueDivision
 from app.db.models.unique_team import UniqueTeam
+from app.db.models.user import User

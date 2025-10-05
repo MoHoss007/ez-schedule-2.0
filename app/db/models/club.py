@@ -1,4 +1,3 @@
-# app/db/models.py
 from __future__ import annotations
 from sqlalchemy import (
     Column,
@@ -25,11 +24,11 @@ class Club(Base):
     __tablename__ = "clubs"
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(255), nullable=False, unique=True, index=True)
-
-    # optional “display” info you might collect in draft (e.g., contact email)
+    user_id = Column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     contact_email = Column(String(255), nullable=True)
 
-    # relationship to TeamSnapAccount(s)
     teamsnap_accounts = relationship(
         "TeamSnapAccount", back_populates="club", cascade="all, delete-orphan"
     )
