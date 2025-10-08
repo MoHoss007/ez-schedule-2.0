@@ -12,8 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime, timezone, timedelta
 import uuid
-
-Base = declarative_base()
+from app.db.base import Base
 
 
 def now_utc() -> datetime:

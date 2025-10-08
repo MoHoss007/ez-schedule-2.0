@@ -1,8 +1,7 @@
 from __future__ import annotations
 from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.orm import relationship, declarative_base
-
-Base = declarative_base()
+from app.db.base import Base
 
 
 class User(Base):
