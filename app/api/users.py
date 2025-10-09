@@ -73,7 +73,7 @@ def _current_user_id_from_request() -> Optional[int]:
 @bp.post("/signup")
 def signup():
     """
-    Body: { "email": "...", "password": "...", "full_name": "..." }
+    Body: { "email": "...", "password": "...", "username": "..." }
     Returns 201 + sets HttpOnly cookies (access/refresh).
     """
     data = request.get_json(force=True) or {}
@@ -81,13 +81,17 @@ def signup():
     password = data.get("password") or ""
     username = (data.get("username") or "").strip() or None
 
-    if not email or not password:
-        return jsonify({"error": "email and password are required"}), 400
+    if not email or not password or not username:
+        return jsonify({"error": "email, password, and username are required"}), 400
 
     with get_session() as db:
-        existing = db.query(User).filter_by(email=email).first()
-        if existing:
+        existing_email = db.query(User).filter_by(email=email).first()
+        if existing_email:
             return jsonify({"error": "email already registered"}), 409
+
+        existing_username = db.query(User).filter_by(username=username).first()
+        if existing_username:
+            return jsonify({"error": "username already taken"}), 409
 
         user = User(
             email=email, username=username, password_hash=hash_password(password)
@@ -101,7 +105,7 @@ def signup():
         refresh = make_refresh_token(user.id)  # type: ignore
 
         resp = make_response(
-            jsonify({"id": user.id, "email": user.email, "full_name": user.full_name})
+            jsonify({"id": user.id, "email": user.email, "username": user.username})
         )
         return _set_auth_cookies(resp, access, refresh), 201
 
@@ -130,7 +134,7 @@ def login():
         refresh = make_refresh_token(user.id)  # type: ignore
 
         resp = make_response(
-            jsonify({"id": user.id, "email": user.email, "full_name": user.full_name})
+            jsonify({"id": user.id, "email": user.email, "username": user.username})
         )
         return _set_auth_cookies(resp, access, refresh)
 
@@ -181,7 +185,7 @@ def me():
                 "authenticated": True,
                 "id": u.id,
                 "email": u.email,
-                "full_name": u.full_name,
+                "username": u.username,
                 "last_login_at": (
                     u.last_login_at.isoformat() if u.last_login_at else None  # type: ignore
                 ),

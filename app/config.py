@@ -14,7 +14,7 @@ class Config:
     )
     TEAMSNP_SCOPES = os.getenv("TEAMSNP_SCOPES", "read write")
     # Database settings
-    DB_URI = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+    DB_URI = os.getenv("EZ_SCHEDULE_DB_URI", "sqlite:///./test.db")
     POST_AUTH_REDIRECT = os.getenv("POST_AUTH_REDIRECT", "http://localhost:3000")
     API_PREFIX = os.getenv("API_PREFIX", "/api/v1")
 
