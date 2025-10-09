@@ -12,7 +12,12 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)  # bcrypt
     last_login_at = Column(DateTime(timezone=True), nullable=True)
 
-    clubs = relationship("Club", back_populates="owner", cascade="all, delete-orphan")
+    clubs = relationship(
+        "Club",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<User id={self.id} email={self.email!r}>"

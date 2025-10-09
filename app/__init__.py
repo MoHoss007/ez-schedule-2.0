@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 
 from app.config import Config
 from .logging_cfg import configure_logging
-from app.api.teamsnap import bp as teamsnap_bp
 
 
 def create_app() -> Flask:
@@ -20,9 +19,11 @@ def create_app() -> Flask:
     from app.api.clubs import bp as clubs_bp
     from app.api.health import bp as health_bp
     from app.api.teamsnap import bp as teamsnap_bp
+    from app.api.users import bp as users_bp
 
     app.register_blueprint(clubs_bp, url_prefix=f"{Config.API_PREFIX}/clubs")
     app.register_blueprint(health_bp, url_prefix=f"{Config.API_PREFIX}/health")
     app.register_blueprint(teamsnap_bp, url_prefix=f"{Config.API_PREFIX}/auth/teamsnap")
+    app.register_blueprint(users_bp, url_prefix=f"{Config.API_PREFIX}/users")
 
     return app

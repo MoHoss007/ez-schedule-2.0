@@ -28,6 +28,8 @@ class Club(Base):
     )
     contact_email = Column(String(255), nullable=True)
 
+    user = relationship("User", back_populates="clubs")
+
     teamsnap_accounts = relationship(
         "TeamSnapAccount", back_populates="club", cascade="all, delete-orphan"
     )
