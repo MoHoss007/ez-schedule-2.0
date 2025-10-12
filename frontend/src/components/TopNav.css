@@ -1,0 +1,241 @@
+/* Layout frame */
+.page-wrap {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #183059 0%, #1e3a8a 100%);
+  color: #0b1220; /* we'll override text in content where needed */
+}
+
+/* Header */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #ffffff;
+  border-bottom: 1px solid #e6e8ef;
+}
+
+.topbar .container {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 10px 16px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+
+/* Brand */
+.brand {
+  font-weight: 700;
+  font-size: 18px;
+  color: #0b1220;
+  text-decoration: none;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab {
+  display: inline-block;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b1220;
+  background: #fff;
+  border: 1px solid #e6e8ef;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease;
+}
+.tab:hover {
+  background: #f7f8fc;
+  border-color: #d7dbe7;
+}
+.tab.active {
+  background: #f1fbf5;
+  color: #0b1220;
+  border-color: #64BB7E;
+  box-shadow: 0 0 0 2px rgba(100,187,126,0.15) inset;
+}
+
+/* Right side */
+.right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.who {
+  text-align: right;
+  line-height: 1.15;
+}
+.who .club {
+  font-size: 11px;
+  color: #6b7280;
+}
+.who .email {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+.who--anon { color: #6b7280; font-size: 13px; }
+
+.btn {
+  appearance: none;
+  border: 1px solid #e6e8ef;
+  background: #fff;
+  color: #0b1220;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.btn:hover {
+  background: #f7f8fc;
+  border-color: #d7dbe7;
+}
+
+.footer {
+  color: #ffffffcc;
+  text-align: center;
+  padding: 24px 0;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  margin-top: 40px;
+}
+
+.content {
+  padding-block: 40px;
+  color: #ffffff;
+}
+.content-inner {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+/* Compact input boxes (applies to all forms) */
+input,
+select,
+textarea {
+  padding: 8px 10px !important;   /* reduce vertical height */
+  font-size: 0.9rem;
+  border-radius: 6px;
+  width: 90%;                     /* narrower than full width */
+  max-width: 600px;               /* prevents extra wide stretch */
+  display: block;
+  margin: 0.25rem auto 0.75rem auto; /* center horizontally */
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-align: left;
+  width: 90%;
+  max-width: 600px;
+  margin-inline: auto;
+}
+
+button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+/* ---- Global page centering ---- */
+.content {
+  padding-block: 40px;
+  color: #fff;
+}
+.content-inner {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+/* Everything inside pages is centered by default */
+.center-all {
+  max-width: 980px;          /* nice readable width */
+  margin-inline: auto;
+  text-align: center;
+}
+
+/* Headings & paragraphs */
+.center-all h1,
+.center-all h2,
+.center-all h3,
+.center-all p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Forms: center + compact controls */
+.center-all form {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.center-all label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 10px auto 6px;
+  width: 85%;
+  text-align: left;          /* keep labels readable while centered as a block */
+  max-width: 640px;
+}
+.center-all input,
+.center-all select,
+.center-all textarea {
+  display: block;
+  width: 85%;
+  max-width: 640px;
+  margin: 0 auto 14px auto;
+  padding: 8px 10px;         /* smaller height */
+  font-size: 0.95rem;
+  border-radius: 8px;
+  color: #0b1220;
+}
+.center-all button,
+.center-all a.button {
+  display: inline-block;
+  margin: 10px auto 0;
+}
+
+/* Lists/rows: keep the whole block centered but items left-aligned for readability */
+.center-all .card,
+.center-all .list,
+.center-all .row {
+  margin-inline: auto;
+  text-align: left;
+}
+
+/* Feature cards area on Home */
+.center-all .feature-grid {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Optional: center the simple key/value sections (checkout/payment) */
+.center-all .kv {
+  display: inline-block;
+  text-align: left;          /* values line up vertically while the block is centered */
+  min-width: 360px;
+}
+
+html {
+  overflow-y: scroll;   /* always reserve scrollbar space */
+}
+

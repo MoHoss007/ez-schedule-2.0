@@ -12,7 +12,7 @@ class Team(Base):
     __tablename__ = "teams"
 
     team_id = Column(Integer, primary_key=True, autoincrement=True)
-    club_id = Column(Integer, ForeignKey("clubs.club_id"), nullable=False)
+    club_id = Column(ForeignKey("clubs.id"), nullable=False)
 
     team_name = Column(String(255), nullable=False)
     home_kit = Column(String(255), nullable=True)

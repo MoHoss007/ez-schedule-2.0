@@ -1,0 +1,236 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: white;
+  background: linear-gradient(135deg, #2D3E50 0%, #1E3A8A 100%);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  font-weight: 500;
+  color: #64BB7E;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #52a168;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #2D3E50 0%, #1E3A8A 100%);
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+  color: white;
+}
+
+h2 {
+  color: white;
+  font-size: 2em;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+h3 {
+  color: white;
+  font-size: 1.4em;
+  font-weight: 600;
+}
+
+/* Form styling */
+input, textarea, select {
+  background-color: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 1em;
+  color: #333;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  width: 100%;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #64BB7E;
+  box-shadow: 0 0 0 3px rgba(100, 187, 126, 0.1);
+}
+
+label {
+  display: block;
+  color: white;
+  font-weight: 500;
+  margin-bottom: 8px;
+  font-size: 0.95em;
+}
+
+button {
+  border-radius: 8px;
+  border: none;
+  padding: 12px 24px;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: inherit;
+  background-color: #64BB7E;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+  background-color: #52a168;
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  background-color: #a0a0a0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 3px solid rgba(100, 187, 126, 0.3);
+  outline-offset: 2px;
+}
+
+/* --- Optional polish for boxed header nav & auth forms --- */
+
+/* Boxed nav container spacing */
+.header-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Default pill */
+.header-pill {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+.header-pill:hover {
+  background: rgba(255,255,255,0.2);
+  transform: translateY(-1px);
+}
+
+/* Active pill */
+.header-pill--active {
+  background: #64BB7E;
+  border-color: #64BB7E;
+  color: #fff;
+}
+
+/* Auth card (centered forms) */
+.auth-wrap {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card {
+  width: 100%;
+  max-width: 680px; /* 400–700 is a nice range */
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+
+.home-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 160px);
+  padding: 2rem 1rem;
+}
+
+.home-content {
+  text-align: center;
+  color: #ffffff;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.home-heading {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 1rem;
+}
+
+.home-subheading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+
+.home-description {
+  font-size: 1.2rem;
+  line-height: 1.7;
+  color: #f0f0f0;
+  margin-bottom: 2.5rem;
+}
+
+.feature-grid {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.feature-card {
+  background-color: #64bb7e;
+  color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 260px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+}
+
+.feature-card h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.feature-card p {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+
