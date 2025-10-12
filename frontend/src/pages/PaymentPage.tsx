@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Shell from "../components/Shell";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { api, PRICE_PER_TEAM } from "../lib/api";
+import { api } from "../lib/api";
 
 
 export default function PaymentPage() {
@@ -13,7 +13,7 @@ export default function PaymentPage() {
 
     const pay = async () => {
         setBusy(true);
-        const r = await api.createCheckoutSession({ email: user?.email, club: user?.club, items: selectedTeamIds.map((id) => ({ id, amount: PRICE_PER_TEAM })) });
+        const r = await api.createCheckoutSession({ email: user?.email, club: user?.club, items: selectedTeamIds.map((id) => ({ id})) });
         setBusy(false);
         if (r?.ok && r.url) window.location.href = r.url;
     };

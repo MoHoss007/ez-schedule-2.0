@@ -2,6 +2,9 @@
 from flask import Blueprint, request, jsonify, current_app
 import stripe
 import os
+from decimal import Decimal, ROUND_HALF_UP
+
+PRICE_PER_TEAM_CAD = Decimal("0.50")
 
 billing_bp = Blueprint("billing_bp", __name__, url_prefix="/billing")
 
@@ -15,47 +18,47 @@ def _configure_stripe():
 
 @billing_bp.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
-    """
-    Expects JSON:
-      {
-        "email": "club@org.com",         # optional but recommended
-        "club": "My Club",               # optional
-        "items": [ { "id": 1, "amount": 0.5 }, ... ]
-      }
-    Returns:
-      { "ok": true, "url": "https://checkout.stripe.com/..." }
-    """
+    # 0) Guard: Stripe key configured
+    if not stripe.api_key:
+        return jsonify({"ok": False, "error": "Stripe not configured"}), 500
+
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip() or None
     club  = (data.get("club") or "").strip() or None
-    items = data.get("items") or []  # [{id, amount}, ...]
+    items = data.get("items") or []  # Expect [{ "id": <teamId> }, ...]
 
-    if not isinstance(items, list) or len(items) == 0:
+    # 1) Validate cart: require team ids, dedupe
+    if not isinstance(items, list) or not items:
         return jsonify({"ok": False, "error": "No items provided"}), 400
+    try:
+        team_ids = [int(i["id"]) for i in items]
+    except Exception:
+        return jsonify({"ok": False, "error": "Invalid item format"}), 400
+    team_ids = list(dict.fromkeys(team_ids))
+    quantity = len(team_ids)
+    if quantity <= 0:
+        return jsonify({"ok": False, "error": "No valid teams"}), 400
 
-    # Build dynamic line_items from your $/team selections
-    line_items = []
-    for entry in items:
-        try:
-            team_id = int(entry["id"])
-            amount  = float(entry["amount"])  # 0.5 => $0.50
-        except (KeyError, ValueError, TypeError):
-            return jsonify({"ok": False, "error": "Invalid item format"}), 400
+    # (Optional) cross-check team_ids exist & belong to this club in your DB
+    # e.g., assert_club_owns_teams(club, team_ids)
 
-        line_items.append({
-            "price_data": {
-                "currency": "usd",
-                "product_data": {
-                    "name": f"Team Registration (Team ID: {team_id})",
-                    "metadata": {"team_id": str(team_id), "club": club or ""},
-                },
-                # Stripe expects cents
-                "unit_amount": int(round(amount * 100)),
+    # 2) Compute unit amount on server (Stripe uses cents as int)
+    unit_amount_cents = int((PRICE_PER_TEAM_CAD * 100).to_integral_value(rounding=ROUND_HALF_UP))
+    if unit_amount_cents < 50:  # Stripe minimum for USD is $0.50
+        return jsonify({"ok": False, "error": "Amount below Stripe minimum"}), 400
+
+    line_items = [{
+        "price_data": {
+            "currency": "usd",
+            "product_data": {
+                "name": "Team Registrations",
+                "metadata": {"club": club or "", "team_ids": ",".join(map(str, team_ids))},
             },
-            "quantity": 1,
-        })
+            "unit_amount": unit_amount_cents,
+        },
+        "quantity": quantity,
+    }]
 
-    # success/cancel URLs for your SPA
     success_url = f"{_frontend_url()}/payment/success"
     cancel_url  = f"{_frontend_url()}/payment"
 
@@ -65,11 +68,9 @@ def create_checkout_session():
             line_items=line_items,
             success_url=success_url,
             cancel_url=cancel_url,
-            customer_email=email,  # Stripe sends receipt if email is provided + receipts enabled
-            metadata={
-                "club": club or "",
-                "source": "ez-schedule-2.0",
-            },
+            customer_email=email,
+            # payment_method_types=['card'],  # optional; modern Stripe defaults are fine
+            metadata={"club": club or "", "team_ids": ",".join(map(str, team_ids)), "source": "ez-schedule-2.0"},
         )
         return jsonify({"ok": True, "url": session.url})
     except Exception as e:
