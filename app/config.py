@@ -26,3 +26,5 @@ class Config:
     # Cookie settings
     COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
     COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN", None)  # None for localhost
+
+    STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
