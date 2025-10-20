@@ -7,7 +7,7 @@ interface AuthCtx {
     user: User | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<boolean>;
-    register: (payload: { email: string; password: string; clubName: string; sport: string; league: string }) => Promise<boolean>;
+    register: (payload: { email: string; password: string; username: string }) => Promise<boolean>;
     logout: () => Promise<void>;
 }
 
@@ -44,11 +44,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const register = async (payload: { email: string; password: string; clubName: string; sport: string; league: string }) => {
+    const register = async (payload: { email: string; password: string; username: string }) => {
         setLoading(true);
         try {
             const r = await api.register(payload);
-            return r.ok;
+            if (r.ok) {
+                // After successful registration, get user info and set state
+                const me = await api.me();
+                if (me.authenticated) setUser({ email: me.email, club: me.club, teamsRegistered: me.teamsRegistered });
+                return true;
+            }
+            return false;
         } finally {
             setLoading(false);
         }

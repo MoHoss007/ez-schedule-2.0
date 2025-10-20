@@ -9,9 +9,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     email: "",
     password: "",
-    clubName: "",
-    sport: "",
-    league: "",
+    username: "",
   });
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -22,8 +20,8 @@ export default function RegisterPage() {
     const r = await register(form);
     setBusy(false);
     if (r) {
-      setMsg("Registered! Check your email to confirm.");
-      setTimeout(() => nav("/login"), 1200);
+      setMsg("Registration successful! Redirecting...");
+      setTimeout(() => nav("/dashboard"), 1200);
     } else setMsg("Registration failed.");
   };
   const bind = (k: keyof typeof form) => ({
@@ -52,6 +50,14 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
+                <label className="mb-2 block text-sm">Username</label>
+                <input
+                  className="w-full rounded-lg border border-white/20 bg-white p-3 text-gray-900 focus:border-[#64BB7E] focus:outline-none focus:ring-2 focus:ring-[#64BB7E]/30"
+                  required
+                  {...bind("username")}
+                />
+              </div>
+              <div>
                 <label className="mb-2 block text-sm">Password</label>
                 <input
                   className="w-full rounded-lg border border-white/20 bg-white p-3 text-gray-900 focus:border-[#64BB7E] focus:outline-none focus:ring-2 focus:ring-[#64BB7E]/30"
@@ -59,32 +65,6 @@ export default function RegisterPage() {
                   required
                   {...bind("password")}
                 />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm">Club Name</label>
-                <input
-                  className="w-full rounded-lg border border-white/20 bg-white p-3 text-gray-900 focus:border-[#64BB7E] focus:outline-none focus:ring-2 focus:ring-[#64BB7E]/30"
-                  required
-                  {...bind("clubName")}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm">Sport</label>
-                  <input
-                    className="w-full rounded-lg border border-white/20 bg-white p-3 text-gray-900 focus:border-[#64BB7E] focus:outline-none focus:ring-2 focus:ring-[#64BB7E]/30"
-                    placeholder="Soccer"
-                    {...bind("sport")}
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm">League</label>
-                  <input
-                    className="w-full rounded-lg border border-white/20 bg-white p-3 text-gray-900 focus:border-[#64BB7E] focus:outline-none focus:ring-2 focus:ring-[#64BB7E]/30"
-                    placeholder="YRSL"
-                    {...bind("league")}
-                  />
-                </div>
               </div>
             </div>
 

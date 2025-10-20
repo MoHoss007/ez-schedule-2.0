@@ -1,10 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./TopNav.css"; // we'll add this next
 
 export default function Shell({ children }: { children: React.ReactNode }) {
     const { user, logout } = useAuth();
+    const [logoutMessage, setLogoutMessage] = useState("");
+
+    const handleLogout = async () => {
+        await logout();
+        setLogoutMessage("Logged out successfully");
+        setTimeout(() => setLogoutMessage(""), 3000); // Clear message after 3 seconds
+    };
 
     return (
         <div className="page-wrap">
@@ -14,22 +21,39 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
                     <nav className="tabs">
                         <NavLink to="/" end className={({ isActive }) => isActive ? "tab active" : "tab"}>Home</NavLink>
-                        <NavLink to="/register" className={({ isActive }) => isActive ? "tab active" : "tab"}>Register</NavLink>
-                        <NavLink to="/login" className={({ isActive }) => isActive ? "tab active" : "tab"}>Login</NavLink>
-                        <NavLink to="/dashboard" className={({ isActive }) => isActive ? "tab active" : "tab"}>Dashboard</NavLink>
-                        <NavLink to="/register-team" className={({ isActive }) => isActive ? "tab active" : "tab"}>Register Team</NavLink>
-                        <NavLink to="/checkout" className={({ isActive }) => isActive ? "tab active" : "tab"}>Checkout</NavLink>
-                        <NavLink to="/payment" className={({ isActive }) => isActive ? "tab active" : "tab"}>Payment</NavLink>
+                        {!user ? (
+                            <>
+                                <NavLink to="/register" className={({ isActive }) => isActive ? "tab active" : "tab"}>Register</NavLink>
+                                <NavLink to="/login" className={({ isActive }) => isActive ? "tab active" : "tab"}>Login</NavLink>
+                            </>
+                        ) : (
+                            <>
+                                <NavLink to="/dashboard" className={({ isActive }) => isActive ? "tab active" : "tab"}>Dashboard</NavLink>
+                                <NavLink to="/register-team" className={({ isActive }) => isActive ? "tab active" : "tab"}>Register Team</NavLink>
+                                <NavLink to="/checkout" className={({ isActive }) => isActive ? "tab active" : "tab"}>Checkout</NavLink>
+                                <NavLink to="/payment" className={({ isActive }) => isActive ? "tab active" : "tab"}>Payment</NavLink>
+                            </>
+                        )}
                     </nav>
 
                     <div className="right">
+                        {logoutMessage && (
+                            <div className="logout-message" style={{ 
+                                color: '#64BB7E', 
+                                fontSize: '0.875rem', 
+                                marginRight: '1rem',
+                                fontWeight: '500'
+                            }}>
+                                {logoutMessage}
+                            </div>
+                        )}
                         {user ? (
                             <>
                                 <div className="who">
                                     <div className="club">{user.club}</div>
                                     <div className="email">{user.email}</div>
                                 </div>
-                                <button className="btn" onClick={logout}>Logout</button>
+                                <button className="btn" onClick={handleLogout}>Logout</button>
                             </>
                         ) : (
                             <div className="who who--anon">Not signed in</div>
