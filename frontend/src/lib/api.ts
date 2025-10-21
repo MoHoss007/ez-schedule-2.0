@@ -1,14 +1,14 @@
-export const API_BASE = "https://ym4cbyfp2us7k5hmvy3wcjslwm0ppdhb.lambda-url.us-east-2.on.aws/";
+export const API_BASE = "https://ym4cbyfp2us7k5hmvy3wcjslwm0ppdhb.lambda-url.us-east-2.on.aws";
 export const PRICE_PER_TEAM = 0.5; // $0.50
 
 
 export const api = {
     async register(payload: { email: string; password: string; username: string }) {
-        console.log("API register call to:", `${API_BASE}/api/users/signup`);
+        console.log("API register call to:", `${API_BASE}/api/v1/users/signup`);
         console.log("Payload:", payload);
         
         try {
-            const res = await fetch(`${API_BASE}/api/users/signup`, {
+            const res = await fetch(`${API_BASE}/api/v1/users/signup`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -33,24 +33,61 @@ export const api = {
         }
     },
     async login(payload: { email: string; password: string }) {
-        const res = await fetch(`${API_BASE}/api/users/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error("Login failed");
-        return await res.json();
+        console.log("API login call to:", `${API_BASE}/api/v1/users/login`);
+        console.log("Login payload:", payload);
+        
+        try {
+            const res = await fetch(`${API_BASE}/api/v1/users/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload),
+            });
+            
+            console.log("Login response status:", res.status);
+            console.log("Login response headers:", Object.fromEntries(res.headers.entries()));
+            
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Login API Error:", errorText);
+                throw new Error(`Login failed: ${res.status} - ${errorText}`);
+            }
+            
+            const result = await res.json();
+            console.log("Login API Response:", result);
+            return result;
+        } catch (error) {
+            console.error("Login Network/API Error:", error);
+            throw error;
+        }
     },
     async me() {
-        const res = await fetch(`${API_BASE}/api/users/me`, {
-            credentials: "include",
-        });
-        if (!res.ok) throw new Error("Me check failed");
-        return await res.json();
+        console.log("API me call to:", `${API_BASE}/api/v1/users/me`);
+        
+        try {
+            const res = await fetch(`${API_BASE}/api/v1/users/me`, {
+                credentials: "include",
+            });
+            
+            console.log("Me response status:", res.status);
+            console.log("Me response headers:", Object.fromEntries(res.headers.entries()));
+            
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Me API Error:", errorText);
+                throw new Error(`Me check failed: ${res.status} - ${errorText}`);
+            }
+            
+            const result = await res.json();
+            console.log("Me API Response:", result);
+            return result;
+        } catch (error) {
+            console.error("Me Network/API Error:", error);
+            throw error;
+        }
     },
     async refresh() {
-        const res = await fetch(`${API_BASE}/api/users/refresh`, {
+        const res = await fetch(`${API_BASE}/api/v1/users/refresh`, {
             method: "POST",
             credentials: "include",
         });
@@ -58,7 +95,7 @@ export const api = {
         return await res.json();
     },
     async logout() {
-        await fetch(`${API_BASE}/api/users/logout`, {
+        await fetch(`${API_BASE}/api/v1/users/logout`, {
             method: "POST",
             credentials: "include",
         });
