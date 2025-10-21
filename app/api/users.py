@@ -189,7 +189,7 @@ def refresh():
         return jsonify({"error": "invalid refresh token"}), 401
 
     access = make_access_token(user_id)
-    resp = make_response(jsonify({"access_refreshed": True}))
+    resp = make_response(jsonify({"access_refreshed": True, "ok": True}))
     # Keep the same refresh cookie; only rotate if you want sliding sessions
     return _set_auth_cookies(resp, access, rtoken)
 
