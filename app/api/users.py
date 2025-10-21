@@ -121,7 +121,7 @@ def signup():
         refresh = make_refresh_token(user.id)  # type: ignore
 
         resp = make_response(
-            jsonify({"id": user.id, "email": user.email, "username": user.username})
+            jsonify({"id": user.id, "ok": True, "email": user.email, "username": user.username})
         )
         return _set_auth_cookies(resp, access, refresh), 201
 
@@ -227,6 +227,7 @@ def me():
         return jsonify(
             {
                 "authenticated": True,
+                "ok": True,
                 "id": u.id,
                 "email": u.email,
                 "username": u.username,
