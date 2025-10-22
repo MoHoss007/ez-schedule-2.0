@@ -16,7 +16,7 @@ from app.security.auth import (
     decode_token,
 )
 
-bp = Blueprint("users", __name__, url_prefix="/api/users")
+bp = Blueprint("users", __name__)
 
 
 # ------------ Cookie helpers ------------
@@ -24,15 +24,16 @@ bp = Blueprint("users", __name__, url_prefix="/api/users")
 
 def _set_auth_cookies(resp, access_token: str, refresh_token: str):
     """
-    Attach JWTs as HttpOnly cookies. In production:
-      - set COOKIE_SECURE=true (HTTPS only)
-      - consider SameSite='Lax' (default below) or 'None' if cross-site is needed
+    Attach JWTs as HttpOnly cookies. For cross-origin requests:
+      - set secure=True (required for SameSite=None)
+      - set samesite="None" (allows cross-origin cookie sending)
+      - don't set domain (for cross-origin compatibility)
     """
     cookie_args = dict(
         httponly=True,
-        secure=Config.COOKIE_SECURE,
-        samesite="Lax",
-        domain=Config.COOKIE_DOMAIN,  # None for localhost
+        secure=True,        # Required for SameSite=None
+        samesite="None",    # Allow cross-origin cookie sending
+        domain=None,        # Don't restrict domain for cross-origin
     )
     # Access cookie (short TTL; refreshed by /refresh)
     resp.set_cookie("access_token", access_token, **cookie_args)
@@ -42,8 +43,8 @@ def _set_auth_cookies(resp, access_token: str, refresh_token: str):
 
 
 def _clear_auth_cookies(resp):
-    resp.delete_cookie("access_token", domain=Config.COOKIE_DOMAIN)
-    resp.delete_cookie("refresh_token", domain=Config.COOKIE_DOMAIN)
+    resp.delete_cookie("access_token", domain=None, secure=True, samesite="None")
+    resp.delete_cookie("refresh_token", domain=None, secure=True, samesite="None")
     return resp
 
 
