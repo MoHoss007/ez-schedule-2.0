@@ -150,10 +150,6 @@ def login():
     Body: { "email": "...", "password": "..." }
     Returns 200 + sets HttpOnly cookies (access/refresh).
     """
-    import logging
-
-    logger = logging.getLogger(__name__)
-
     data = request.get_json(force=True) or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
@@ -220,10 +216,6 @@ def me():
     """
     Returns the current user's profile (via access token).
     """
-    import logging
-
-    logger = logging.getLogger(__name__)
-
     logger.info("GET /me endpoint called")
 
     # Log cookies for debugging
