@@ -31,9 +31,9 @@ def _set_auth_cookies(resp, access_token: str, refresh_token: str):
     """
     cookie_args = dict(
         httponly=True,
-        secure=True,        # Required for SameSite=None
-        samesite="None",    # Allow cross-origin cookie sending
-        domain=None,        # Don't restrict domain for cross-origin
+        secure=Config.COOKIE_SECURE,        # Required for SameSite=None
+        samesite=Config.COOKIE_SAMESITE,    # Allow cross-origin cookie sending
+        domain=Config.COOKIE_DOMAIN,        # Don't restrict domain for cross-origin
     )
     # Access cookie (short TTL; refreshed by /refresh)
     resp.set_cookie("access_token", access_token, **cookie_args)
@@ -43,8 +43,8 @@ def _set_auth_cookies(resp, access_token: str, refresh_token: str):
 
 
 def _clear_auth_cookies(resp):
-    resp.delete_cookie("access_token", domain=None, secure=True, samesite="None")
-    resp.delete_cookie("refresh_token", domain=None, secure=True, samesite="None")
+    resp.delete_cookie("access_token", domain=Config.COOKIE_DOMAIN, secure=Config.COOKIE_SECURE, samesite=Config.COOKIE_SAMESITE)
+    resp.delete_cookie("refresh_token", domain=Config.COOKIE_DOMAIN, secure=Config.COOKIE_SECURE, samesite=Config.COOKIE_SAMESITE)
     return resp
 
 
