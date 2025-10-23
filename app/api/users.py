@@ -15,6 +15,9 @@ from app.security.auth import (
     make_refresh_token,
     decode_token,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint("users", __name__)
 
@@ -31,9 +34,9 @@ def _set_auth_cookies(resp, access_token: str, refresh_token: str):
     """
     cookie_args = dict(
         httponly=True,
-        secure=Config.COOKIE_SECURE,        # Required for SameSite=None
-        samesite=Config.COOKIE_SAMESITE,    # Allow cross-origin cookie sending
-        domain=Config.COOKIE_DOMAIN,        # Don't restrict domain for cross-origin
+        secure=Config.COOKIE_SECURE,  # Required for SameSite=None
+        samesite=Config.COOKIE_SAMESITE,  # Allow cross-origin cookie sending
+        domain=Config.COOKIE_DOMAIN,  # Don't restrict domain for cross-origin
     )
     # Access cookie (short TTL; refreshed by /refresh)
     resp.set_cookie("access_token", access_token, **cookie_args)
@@ -43,8 +46,18 @@ def _set_auth_cookies(resp, access_token: str, refresh_token: str):
 
 
 def _clear_auth_cookies(resp):
-    resp.delete_cookie("access_token", domain=Config.COOKIE_DOMAIN, secure=Config.COOKIE_SECURE, samesite=Config.COOKIE_SAMESITE)
-    resp.delete_cookie("refresh_token", domain=Config.COOKIE_DOMAIN, secure=Config.COOKIE_SECURE, samesite=Config.COOKIE_SAMESITE)
+    resp.delete_cookie(
+        "access_token",
+        domain=Config.COOKIE_DOMAIN,
+        secure=Config.COOKIE_SECURE,
+        samesite=Config.COOKIE_SAMESITE,
+    )
+    resp.delete_cookie(
+        "refresh_token",
+        domain=Config.COOKIE_DOMAIN,
+        secure=Config.COOKIE_SECURE,
+        samesite=Config.COOKIE_SAMESITE,
+    )
     return resp
 
 
@@ -53,28 +66,25 @@ def _current_user_id_from_request() -> Optional[int]:
     Reads the access token from Authorization: Bearer ... or HttpOnly cookie.
     Returns user_id (int) or None.
     """
-    import logging
-    logger = logging.getLogger(__name__)
-    
     auth = request.headers.get("Authorization", "")
     token = auth[7:] if auth.startswith("Bearer ") else None
     logger.info(f"Authorization header token: {'***' if token else 'None'}")
-    
+
     if not token:
         token = request.cookies.get("access_token")
         logger.info(f"Cookie access_token: {'***' if token else 'None'}")
-    
+
     if not token:
         logger.info("No token found in headers or cookies")
         return None
-        
+
     payload = decode_token(token)
     logger.info(f"Token payload: {payload}")
-    
+
     if not payload or payload.get("typ") != "access":
         logger.warning(f"Invalid token payload or wrong type: {payload}")
         return None
-        
+
     try:
         user_id = int(payload["sub"])
         logger.info(f"Extracted user_id: {user_id}")
@@ -122,7 +132,14 @@ def signup():
         refresh = make_refresh_token(user.id)  # type: ignore
 
         resp = make_response(
-            jsonify({"id": user.id, "ok": True, "email": user.email, "username": user.username})
+            jsonify(
+                {
+                    "id": user.id,
+                    "ok": True,
+                    "email": user.email,
+                    "username": user.username,
+                }
+            )
         )
         return _set_auth_cookies(resp, access, refresh), 201
 
@@ -134,12 +151,13 @@ def login():
     Returns 200 + sets HttpOnly cookies (access/refresh).
     """
     import logging
+
     logger = logging.getLogger(__name__)
-    
+
     data = request.get_json(force=True) or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
-    
+
     logger.info(f"Login attempt for email: {email}")
 
     if not email or not password:
@@ -156,16 +174,18 @@ def login():
 
         access = make_access_token(user.id)  # type: ignore
         refresh = make_refresh_token(user.id)  # type: ignore
-        
+
         logger.info(f"Login successful for user {user.id} ({email})")
 
         resp = make_response(
-            jsonify({
-                "ok": True,
-                "id": user.id, 
-                "email": user.email, 
-                "username": user.username
-            })
+            jsonify(
+                {
+                    "ok": True,
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                }
+            )
         )
         return _set_auth_cookies(resp, access, refresh)
 
@@ -201,17 +221,18 @@ def me():
     Returns the current user's profile (via access token).
     """
     import logging
+
     logger = logging.getLogger(__name__)
-    
+
     logger.info("GET /me endpoint called")
-    
+
     # Log cookies for debugging
     cookies = request.cookies
     logger.info(f"Cookies received: {dict(cookies)}")
-    
+
     uid = _current_user_id_from_request()
     logger.info(f"User ID from request: {uid}")
-    
+
     if not uid:
         logger.info("No valid user ID found, returning unauthenticated")
         return jsonify({"authenticated": False}), 200
