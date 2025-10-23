@@ -1,16 +1,19 @@
 import React, { useState } from "react";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./TopNav.css"; // we'll add this next
 
 export default function Shell({ children }: { children: React.ReactNode }) {
     const { user, logout } = useAuth();
     const [logoutMessage, setLogoutMessage] = useState("");
+    const navigate = useNavigate();
 
     const handleLogout = async () => {
         await logout();
         setLogoutMessage("Logged out successfully");
         setTimeout(() => setLogoutMessage(""), 3000); // Clear message after 3 seconds
+        // Navigate to home page after logout
+        navigate("/");
     };
 
     return (

@@ -15,8 +15,11 @@ from app.security.auth import (
     make_refresh_token,
     decode_token,
 )
+import logging
 
-bp = Blueprint("users", __name__, url_prefix="/api/users")
+logger = logging.getLogger(__name__)
+
+bp = Blueprint("users", __name__)
 
 
 # ------------ Cookie helpers ------------
@@ -24,15 +27,16 @@ bp = Blueprint("users", __name__, url_prefix="/api/users")
 
 def _set_auth_cookies(resp, access_token: str, refresh_token: str):
     """
-    Attach JWTs as HttpOnly cookies. In production:
-      - set COOKIE_SECURE=true (HTTPS only)
-      - consider SameSite='Lax' (default below) or 'None' if cross-site is needed
+    Attach JWTs as HttpOnly cookies. For cross-origin requests:
+      - set secure=True (required for SameSite=None)
+      - set samesite="None" (allows cross-origin cookie sending)
+      - don't set domain (for cross-origin compatibility)
     """
     cookie_args = dict(
         httponly=True,
-        secure=Config.COOKIE_SECURE,
-        samesite="Lax",
-        domain=Config.COOKIE_DOMAIN,  # None for localhost
+        secure=Config.COOKIE_SECURE,  # Required for SameSite=None
+        samesite=Config.COOKIE_SAMESITE,  # Allow cross-origin cookie sending
+        domain=Config.COOKIE_DOMAIN,  # Don't restrict domain for cross-origin
     )
     # Access cookie (short TTL; refreshed by /refresh)
     resp.set_cookie("access_token", access_token, **cookie_args)
@@ -42,8 +46,18 @@ def _set_auth_cookies(resp, access_token: str, refresh_token: str):
 
 
 def _clear_auth_cookies(resp):
-    resp.delete_cookie("access_token", domain=Config.COOKIE_DOMAIN)
-    resp.delete_cookie("refresh_token", domain=Config.COOKIE_DOMAIN)
+    resp.delete_cookie(
+        "access_token",
+        domain=Config.COOKIE_DOMAIN,
+        secure=Config.COOKIE_SECURE,
+        samesite=Config.COOKIE_SAMESITE,
+    )
+    resp.delete_cookie(
+        "refresh_token",
+        domain=Config.COOKIE_DOMAIN,
+        secure=Config.COOKIE_SECURE,
+        samesite=Config.COOKIE_SAMESITE,
+    )
     return resp
 
 
@@ -54,16 +68,29 @@ def _current_user_id_from_request() -> Optional[int]:
     """
     auth = request.headers.get("Authorization", "")
     token = auth[7:] if auth.startswith("Bearer ") else None
+    logger.info(f"Authorization header token: {'***' if token else 'None'}")
+
     if not token:
         token = request.cookies.get("access_token")
+        logger.info(f"Cookie access_token: {'***' if token else 'None'}")
+
     if not token:
+        logger.info("No token found in headers or cookies")
         return None
+
     payload = decode_token(token)
+    logger.info(f"Token payload: {payload}")
+
     if not payload or payload.get("typ") != "access":
+        logger.warning(f"Invalid token payload or wrong type: {payload}")
         return None
+
     try:
-        return int(payload["sub"])
-    except Exception:
+        user_id = int(payload["sub"])
+        logger.info(f"Extracted user_id: {user_id}")
+        return user_id
+    except Exception as e:
+        logger.error(f"Error extracting user_id from payload: {e}")
         return None
 
 
@@ -105,7 +132,14 @@ def signup():
         refresh = make_refresh_token(user.id)  # type: ignore
 
         resp = make_response(
-            jsonify({"id": user.id, "email": user.email, "username": user.username})
+            jsonify(
+                {
+                    "id": user.id,
+                    "ok": True,
+                    "email": user.email,
+                    "username": user.username,
+                }
+            )
         )
         return _set_auth_cookies(resp, access, refresh), 201
 
@@ -120,21 +154,34 @@ def login():
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
 
+    logger.info(f"Login attempt for email: {email}")
+
     if not email or not password:
-        return jsonify({"error": "email and password are required"}), 400
+        logger.warning("Login failed: missing email or password")
+        return jsonify({"ok": False, "error": "email and password are required"}), 400
 
     with get_session() as db:
         user = db.query(User).filter_by(email=email).first()
         if not user or not verify_password(password, user.password_hash):  # type: ignore
-            return jsonify({"error": "invalid credentials"}), 401
+            logger.warning(f"Login failed: invalid credentials for {email}")
+            return jsonify({"ok": False, "error": "invalid credentials"}), 401
 
         user.last_login_at = datetime.now(timezone.utc)  # type: ignore
 
         access = make_access_token(user.id)  # type: ignore
         refresh = make_refresh_token(user.id)  # type: ignore
 
+        logger.info(f"Login successful for user {user.id} ({email})")
+
         resp = make_response(
-            jsonify({"id": user.id, "email": user.email, "username": user.username})
+            jsonify(
+                {
+                    "ok": True,
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                }
+            )
         )
         return _set_auth_cookies(resp, access, refresh)
 
@@ -159,7 +206,7 @@ def refresh():
         return jsonify({"error": "invalid refresh token"}), 401
 
     access = make_access_token(user_id)
-    resp = make_response(jsonify({"access_refreshed": True}))
+    resp = make_response(jsonify({"access_refreshed": True, "ok": True}))
     # Keep the same refresh cookie; only rotate if you want sliding sessions
     return _set_auth_cookies(resp, access, rtoken)
 
@@ -169,20 +216,32 @@ def me():
     """
     Returns the current user's profile (via access token).
     """
+    logger.info("GET /me endpoint called")
+
+    # Log cookies for debugging
+    cookies = request.cookies
+    logger.info(f"Cookies received: {dict(cookies)}")
+
     uid = _current_user_id_from_request()
+    logger.info(f"User ID from request: {uid}")
+
     if not uid:
+        logger.info("No valid user ID found, returning unauthenticated")
         return jsonify({"authenticated": False}), 200
 
     with get_session() as db:
         u = db.get(User, uid)
         if not u:
             # token valid but user deleted
+            logger.warning(f"Token valid but user {uid} not found in database")
             resp = make_response(jsonify({"authenticated": False}))
             return _clear_auth_cookies(resp)
 
+        logger.info(f"User {uid} authenticated successfully")
         return jsonify(
             {
                 "authenticated": True,
+                "ok": True,
                 "id": u.id,
                 "email": u.email,
                 "username": u.username,

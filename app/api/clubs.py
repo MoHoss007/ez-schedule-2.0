@@ -76,4 +76,4 @@ def create_draft_club():
     # You can either return the full URL to your UI (which then window.location = url),
     # or directly 302 redirect here. Returning gives the SPA control:
     url = f"{_cfg('TEAMSNP_AUTH_BASE')}{AUTHZ_PATH}?{urlencode(params)}"
-    return jsonify({"authorize_url": url, "club_id": club_uuid})
+    return jsonify({"authorize_url": url, "club_id": club_uuid, "ok": True})

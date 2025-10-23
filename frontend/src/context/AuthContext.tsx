@@ -32,15 +32,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const login = async (email: string, password: string) => {
+        console.log("AuthContext: Starting login process for:", email);
         setLoading(true);
         try {
+            console.log("AuthContext: Calling api.login");
             const r = await api.login({ email, password });
-            if (!r.ok) return false;
+            console.log("AuthContext: Login response:", r);
+            
+            if (!r.ok) {
+                console.log("AuthContext: Login failed - no ok field or ok is false");
+                return false;
+            }
+            
+            console.log("AuthContext: Login successful, now calling api.me");
             const me = await api.me();
-            if (me.authenticated) setUser({ email: me.email, club: me.club, teamsRegistered: me.teamsRegistered });
+            console.log("AuthContext: Me response:", me);
+            
+            if (me.authenticated) {
+                console.log("AuthContext: User authenticated, setting user state");
+                setUser({ email: me.email, club: me.club, teamsRegistered: me.teamsRegistered });
+            } else {
+                console.log("AuthContext: User not authenticated according to /me endpoint");
+            }
             return me.authenticated;
+        } catch (error) {
+            console.error("AuthContext: Login error:", error);
+            return false;
         } finally {
             setLoading(false);
+            console.log("AuthContext: Login process completed");
         }
     };
 
