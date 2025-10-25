@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 
 from app.config import Config
 from .logging_cfg import configure_logging
-from flask_cors import CORS
+# Remove CORS import since AWS Lambda Function URL will handle it
+# from flask_cors import CORS
 
 
 def create_app() -> Flask:
@@ -16,9 +17,8 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # Configure CORS to handle AWS Signature V4 headers and credentials
-    CORS(app, 
-         supports_credentials=True)
+    # CORS is handled by AWS Lambda Function URL configuration
+    # No need for Flask-CORS when using Lambda Function URLs
 
     # Blueprints
     from app.api.clubs import bp as clubs_bp
