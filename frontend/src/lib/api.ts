@@ -40,8 +40,7 @@ export async function getAWSHeaders(method: string, url: string, body?: string) 
     headers: {
       host: u.host,
       // Keep JSON by default; adjust if you send other content types.
-      "content-type": "application/json",
-      "access-control-allow-origin": "*"
+      "content-type": "application/json"
     },
     body, // signer will hash the payload
   });

@@ -15,7 +15,10 @@ def create_app() -> Flask:
 
     app = Flask(__name__)
     app.config.from_object(Config)
-    CORS(app)
+    
+    # Configure CORS to handle AWS Signature V4 headers and credentials
+    CORS(app, 
+         supports_credentials=True)
 
     # Blueprints
     from app.api.clubs import bp as clubs_bp
