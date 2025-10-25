@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from app.config import Config
 from .logging_cfg import configure_logging
+from flask_cors import CORS
 
 
 def create_app() -> Flask:
@@ -14,6 +15,7 @@ def create_app() -> Flask:
 
     app = Flask(__name__)
     app.config.from_object(Config)
+    CORS(app)
 
     # Blueprints
     from app.api.clubs import bp as clubs_bp
