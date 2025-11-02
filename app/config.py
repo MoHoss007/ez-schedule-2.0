@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Config:
@@ -26,5 +29,6 @@ class Config:
     # Cookie settings
     COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
     COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN", None)  # None for localhost
+    COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "None")  # Lax, Strict, None
 
     STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
