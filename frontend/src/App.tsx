@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { PublicRoute } from "./components/PublicRoute";
 import HomePage from "./pages/HomePage";
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
@@ -17,13 +19,41 @@ export default function App() {
       <CartProvider>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/register-team" element={<RegisterTeamPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/payment" element={<PaymentPage />} />
-          <Route path="/payment/success" element={<PaymentSuccessPage />} />
+          <Route path="/register" element={
+            <PublicRoute>
+              <RegisterPage />
+            </PublicRoute>
+          } />
+          <Route path="/login" element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/register-team" element={
+            <ProtectedRoute>
+              <RegisterTeamPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/checkout" element={
+            <ProtectedRoute>
+              <CheckoutPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/payment" element={
+            <ProtectedRoute>
+              <PaymentPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/payment/success" element={
+            <ProtectedRoute>
+              <PaymentSuccessPage />
+            </ProtectedRoute>
+          } />
         </Routes>
       </CartProvider>
     </AuthProvider>

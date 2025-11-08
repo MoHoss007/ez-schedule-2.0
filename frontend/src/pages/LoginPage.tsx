@@ -1,20 +1,28 @@
 import React, { useState } from "react";
 import Shell from "../components/Shell";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function LoginPage() {
     const { login } = useAuth();
     const nav = useNavigate();
+    const location = useLocation();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [err, setErr] = useState("");
 
+    // Get the page user was trying to access, or default to dashboard
+    const from = location.state?.from?.pathname || '/dashboard';
+
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const ok = await login(email, password);
-        if (ok) nav("/dashboard");
-        else setErr("Invalid credentials");
+        if (ok) {
+            // Redirect to the page they were trying to access
+            nav(from, { replace: true });
+        } else {
+            setErr("Invalid credentials");
+        }
     };
 
     return (

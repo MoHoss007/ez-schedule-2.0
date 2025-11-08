@@ -173,23 +173,32 @@ export const api = {
         }
     },
     async refresh() {
+        const headers = await getAWSHeaders("POST", `${API_BASE}/api/v1/users/refresh`);
         const res = await fetch(`${API_BASE}/api/v1/users/refresh`, {
             method: "POST",
+            headers,
             credentials: "include",
         });
         if (!res.ok) throw new Error("Refresh failed");
         return await res.json();
     },
     async logout() {
+        const headers = await getAWSHeaders("POST", `${API_BASE}/api/v1/users/logout`);
         await fetch(`${API_BASE}/api/v1/users/logout`, {
             method: "POST",
+            headers,
             credentials: "include",
         });
     },
     async listTeams(params: { sport: string; league: string }) {
         const { sport, league } = params;
         try {
-            const res = await fetch(`${API_BASE}/clubs/teams?sport=${encodeURIComponent(sport)}&league=${encodeURIComponent(league)}`);
+            const url = `${API_BASE}/clubs/teams?sport=${encodeURIComponent(sport)}&league=${encodeURIComponent(league)}`;
+            const headers = await getAWSHeaders("GET", url);
+            const res = await fetch(url, {
+                headers,
+                credentials: "include",
+            });
             if (!res.ok) throw new Error("list teams failed");
             return await res.json();
         } catch {
@@ -206,11 +215,13 @@ export const api = {
         club?: string;
         items: { id: number}[];
     }) {
+        const body = JSON.stringify({ email, club, items });
+        const headers = await getAWSHeaders("POST", `${API_BASE}/billing/create-checkout-session`, body);
         const res = await fetch(`${API_BASE}/billing/create-checkout-session`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             credentials: "include", // if you use cookies for auth; safe otherwise
-            body: JSON.stringify({ email, club, items }),
+            body,
         });
         if (!res.ok) {
             return { ok: false, error: "Failed to create checkout session" };
