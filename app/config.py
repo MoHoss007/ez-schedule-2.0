@@ -6,6 +6,7 @@ load_dotenv()
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev")
+    APP_BASE_URL = os.getenv("APP_BASE_URL", "").rstrip("/")
     # TeamSnap OAuth settings
     TEAMSNP_AUTH_BASE = os.getenv(
         "TEAMSNP_AUTH_BASE", "https://auth.teamsnap.com"
@@ -32,3 +33,4 @@ class Config:
     COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "None")  # Lax, Strict, None
 
     STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+    STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")

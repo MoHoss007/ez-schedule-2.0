@@ -9,22 +9,18 @@ from sqlalchemy import (
     Index,
     JSON,
 )
-from sqlalchemy.orm import relationship, declarative_base
-from datetime import datetime, timezone, timedelta
+from sqlalchemy.orm import relationship
+from db.utils import now_utc
 import uuid
 from app.db.base import Base
 
 
-def now_utc() -> datetime:
-    return datetime.now(timezone.utc)
-
-
 class Club(Base):
     __tablename__ = "clubs"
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    club_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(255), nullable=False, unique=True, index=True)
     user_id = Column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True
     )
     contact_email = Column(String(255), nullable=True)
 
@@ -33,9 +29,10 @@ class Club(Base):
     teamsnap_accounts = relationship(
         "TeamSnapAccount", back_populates="club", cascade="all, delete-orphan"
     )
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     def __repr__(self) -> str:
-        return f"<Club id={self.id} name={self.name!r}>"
+        return f"<Club club_id={self.club_id} name={self.name!r}>"
 
 
 class OAuthState(Base):

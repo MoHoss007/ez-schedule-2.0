@@ -1,78 +1,191 @@
-# app/api/billing.py
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, g, abort
+from app.config import Config
+from app.db.session import get_session
+from app.db.models import User, Subscription
+from app.api.utils import _cfg
 import stripe
-import os
-from decimal import Decimal, ROUND_HALF_UP
 
-PRICE_PER_TEAM_CAD = Decimal("0.50")
 
-billing_bp = Blueprint("billing_bp", __name__, url_prefix="/billing")
+bp = Blueprint("billing_api", __name__)
 
-def _frontend_url() -> str:
-    # If you serve vite dev on 5173 locally, keep this default.
-    return os.getenv("FRONTEND_URL", "http://localhost:5173")
 
-@billing_bp.before_app_first_request
-def _configure_stripe():
-    stripe.api_key = os.getenv("STRIPE_SECRET_KEY")  # set in your env
-
-@billing_bp.route("/create-checkout-session", methods=["POST"])
+@bp.post("/checkout-sessions")
 def create_checkout_session():
-    # 0) Guard: Stripe key configured
-    if not stripe.api_key:
-        return jsonify({"ok": False, "error": "Stripe not configured"}), 500
+    """
+    Create a Stripe Checkout Session for a subscription.
+    """
+    data = request.get_json() or {}
+    user_id = data.get("user_id")
+    teams = data.get("teams")
 
-    data = request.get_json(silent=True) or {}
-    email = (data.get("email") or "").strip() or None
-    club  = (data.get("club") or "").strip() or None
-    items = data.get("items") or []  # Expect [{ "id": <teamId> }, ...]
+    if not user_id or not teams:
+        return jsonify({"error": "user_id and teams are required"}), 400
 
-    # 1) Validate cart: require team ids, dedupe
-    if not isinstance(items, list) or not items:
-        return jsonify({"ok": False, "error": "No items provided"}), 400
-    try:
-        team_ids = [int(i["id"]) for i in items]
-    except Exception:
-        return jsonify({"ok": False, "error": "Invalid item format"}), 400
-    team_ids = list(dict.fromkeys(team_ids))
-    quantity = len(team_ids)
-    if quantity <= 0:
-        return jsonify({"ok": False, "error": "No valid teams"}), 400
+    with get_session() as session:
+        user = session.query(User).filter(User.user_id == int(user_id)).first()
 
-    # (Optional) cross-check team_ids exist & belong to this club in your DB
-    # e.g., assert_club_owns_teams(club, team_ids)
+    if not user:
+        return jsonify({"error": "user not found"}), 404
 
-    # 2) Compute unit amount on server (Stripe uses cents as int)
-    unit_amount_cents = int((PRICE_PER_TEAM_CAD * 100).to_integral_value(rounding=ROUND_HALF_UP))
-    if unit_amount_cents < 50:  # Stripe minimum for USD is $0.50
-        return jsonify({"ok": False, "error": "Amount below Stripe minimum"}), 400
+    price_id = _cfg("STRIPE_PRICE_ID")
+    if not price_id:
+        return jsonify({"error": "Stripe price ID not configured"}), 500
 
-    line_items = [{
-        "price_data": {
-            "currency": "usd",
-            "product_data": {
-                "name": "Team Registrations",
-                "metadata": {"club": club or "", "team_ids": ",".join(map(str, team_ids))},
-            },
-            "unit_amount": unit_amount_cents,
-        },
-        "quantity": quantity,
-    }]
+    stripe_session = stripe.checkout.Session.create(
+        mode="subscription",
+        success_url=f"{_cfg('APP_BASE_URL')}/{_cfg('API_PREFIX')}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{_cfg('APP_BASE_URL')}/{_cfg('API_PREFIX')}/billing/cancel",
+        customer_email=user.email,
+        line_items=[
+            {
+                "price": price_id,
+                "quantity": int(teams),
+            }
+        ],
+    )
 
-    success_url = f"{_frontend_url()}/payment/success"
-    cancel_url  = f"{_frontend_url()}/payment"
+    return (
+        jsonify(
+            {
+                "checkout_session_id": stripe_session.id,  # type: ignore
+                "url": stripe_session.url,  # type: ignore
+            }
+        ),
+        201,
+    )
 
-    try:
-        session = stripe.checkout.Session.create(
-            mode="payment",
-            line_items=line_items,
-            success_url=success_url,
-            cancel_url=cancel_url,
-            customer_email=email,
-            # payment_method_types=['card'],  # optional; modern Stripe defaults are fine
-            metadata={"club": club or "", "team_ids": ",".join(map(str, team_ids)), "source": "ez-schedule-2.0"},
+
+@bp.get("/subscriptions")
+def list_subscriptions():
+    user_email = request.args.get("user_email")
+    user_id = request.args.get("user_id")
+    with get_session() as session:
+        q = session.query(Subscription)
+        if user_email:
+            q = q.join(User).filter(User.email == user_email)
+        if user_id:
+            q = q.filter(Subscription.user_id == int(user_id))
+
+    subs = q.all()
+
+    return jsonify(
+        [
+            {
+                "id": s.id,
+                "user_id": s.user_id,
+                "stripe_subscription_id": s.stripe_subscription_id,
+                "current_teams": s.current_teams,
+                "future_teams": s.future_teams,
+                "status": s.status.value,
+                "current_period_end": (
+                    s.current_period_end.isoformat()
+                    if s.current_period_end is not None
+                    else None
+                ),
+            }
+            for s in subs
+        ]
+    )
+
+
+@bp.get("/subscriptions/<int:sub_id>")
+def get_subscription(sub_id):
+    with get_session() as session:
+        s = session.query(Subscription).filter(Subscription.id == sub_id).first()
+    if not s:
+        return jsonify({"error": "subscription not found"}), 404
+    return jsonify(
+        {
+            "id": s.id,
+            "user_id": s.user_id,
+            "stripe_subscription_id": s.stripe_subscription_id,
+            "current_teams": s.current_teams,
+            "future_teams": s.future_teams,
+            "status": s.status.value,
+            "current_period_end": (
+                s.current_period_end.isoformat()
+                if s.current_period_end is not None
+                else None
+            ),
+        }
+    )
+
+
+@bp.patch("/subscriptions/<int:sub_id>")
+def update_subscription(sub_id):
+    """
+    PATCH /api/v1/billing/subscriptions/<sub_id>
+
+    Supports:
+    - { "future_teams": X } → next period change
+    - { "current_teams": X } → immediate increase only (prorated now)
+    """
+    with get_session() as session:
+        s = session.query(Subscription).filter(Subscription.id == sub_id).first()
+
+        if not s:
+            return jsonify({"error": "subscription not found"}), 404
+
+        data = request.get_json() or {}
+
+        if "current_teams" in data:
+            new_current = int(data["current_teams"])
+
+            if new_current < s.current_teams:  # type: ignore
+                return (
+                    jsonify(
+                        {
+                            "error": "Immediate decrease is not allowed. Use 'future_teams' for next cycle."
+                        }
+                    ),
+                    400,
+                )
+
+            if new_current > s.current_teams:  # type: ignore
+                # --- Stripe prorated update ---
+                stripe_sub = stripe.Subscription.retrieve(
+                    s.stripe_subscription_id, expand=["items"]
+                )
+                item_id = stripe_sub["items"]["data"][0]["id"]
+
+                # Update with proration
+                stripe.Subscription.modify(
+                    s.stripe_subscription_id,
+                    items=[{"id": item_id, "quantity": new_current}],
+                    proration_behavior="create_prorations",
+                    billing_cycle_anchor="unchanged",
+                    payment_behavior="allow_incomplete",
+                )
+
+                # Create + finalize + pay invoice with the proration cost
+                invoice = stripe.Invoice.create(
+                    customer=s.stripe_customer_id,
+                    pending_invoice_items_behavior="include",
+                    collection_method="charge_automatically",
+                    auto_advance=False,
+                )
+                invoice = stripe.Invoice.finalize_invoice(invoice.id)  # type: ignore
+                invoice = stripe.Invoice.pay(invoice.id)
+
+                s.current_teams = new_current  # type: ignore
+                # keep future_teams >= current_teams logically
+                if s.future_teams < new_current:  # type: ignore
+                    s.future_teams = new_current  # type: ignore
+
+        #
+        # ✅ 2. Handle deferred change (next cycle)
+        #
+        if "future_teams" in data:
+            new_future = int(data["future_teams"])
+            if new_future < 1:
+                return jsonify({"error": "future_teams must be >= 1"}), 400
+
+            s.future_teams = new_future  # type: ignore
+
+        return jsonify(
+            {
+                "id": s.id,
+                "current_teams": s.current_teams,
+                "future_teams": s.future_teams,
+            }
         )
-        return jsonify({"ok": True, "url": session.url})
-    except Exception as e:
-        current_app.logger.exception("Stripe session error")
-        return jsonify({"ok": False, "error": str(e)}), 500

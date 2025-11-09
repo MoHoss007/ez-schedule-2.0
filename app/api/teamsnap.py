@@ -78,9 +78,11 @@ def teamsnap_callback():
         # Upsert Club by unique name
         club = db.query(Club).filter_by(name=name).first()
         if not club:
-            club = Club(id=club_id, name=name, contact_email=draft.get("contact_email"))
+            club = Club(
+                club_id=club_id, name=name, contact_email=draft.get("contact_email")
+            )
             db.add(club)
-            db.flush()  # get club.id
+            db.flush()  # get club.club_id
         else:
             # Optionally update display fields from draft
             if draft.get("contact_email"):
@@ -89,12 +91,12 @@ def teamsnap_callback():
         # Upsert TeamSnapAccount per (club_id, teamsnap_user_id)
         tsa = (
             db.query(TeamSnapAccount)
-            .filter_by(club_id=club.id, teamsnap_user_id=teamsnap_user_id)
+            .filter_by(club_id=club.club_id, teamsnap_user_id=teamsnap_user_id)
             .first()
         )
         if not tsa:
             tsa = TeamSnapAccount(
-                club_id=club.id,
+                club_id=club.club_id,
                 teamsnap_user_id=teamsnap_user_id,
                 scope=tok.get("scope"),
                 access_token_enc=encrypt(access_token),
@@ -112,7 +114,7 @@ def teamsnap_callback():
         # Cleanup state
         db.delete(st)
         logger.info(
-            f"Created Club id={club.id} name={club.name!r} with TeamSnapAccount id={tsa.id} user_id={teamsnap_user_id}"
+            f"Created Club club_id={club.club_id} name={club.name!r} with TeamSnapAccount id={tsa.id} user_id={teamsnap_user_id}"
         )
 
     # Send them back to your UI

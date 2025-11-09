@@ -1,3 +1,5 @@
+# TODO: instead of team_snap info in tables add a third-party accounts table and handle propely
+
 from app.db.models.club import Club, OAuthState, TeamSnapAccount
 from app.db.models.team import Team
 from app.db.models.opponent import Opponent
@@ -7,3 +9,4 @@ from app.db.models.unique_location import UniqueLocation
 from app.db.models.unique_division import UniqueDivision
 from app.db.models.unique_team import UniqueTeam
 from app.db.models.user import User
+from app.db.models.subscription import Subscription, SubscriptionStatus

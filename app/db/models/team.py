@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 from app.db.base import Base
@@ -12,12 +12,13 @@ class Team(Base):
     __tablename__ = "teams"
 
     team_id = Column(Integer, primary_key=True, autoincrement=True)
-    club_id = Column(ForeignKey("clubs.id"), nullable=False)
+    club_id = Column(ForeignKey("clubs.club_id"), nullable=False)
 
     team_name = Column(String(255), nullable=False)
     home_kit = Column(String(255), nullable=True)
     away_kit = Column(String(255), nullable=True)
     teamsnap_team_id = Column(String(255), nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationship to Club (optional)
     club = relationship("Club", backref="teams")

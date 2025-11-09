@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from app.config import Config
 from .logging_cfg import configure_logging
+
 # Remove CORS import since AWS Lambda Function URL will handle it
 # from flask_cors import CORS
 
@@ -16,19 +17,24 @@ def create_app() -> Flask:
 
     app = Flask(__name__)
     app.config.from_object(Config)
-    
-    # CORS is handled by AWS Lambda Function URL configuration
-    # No need for Flask-CORS when using Lambda Function URLs
+
+    import stripe
+
+    stripe.api_key = Config.STRIPE_SECRET_KEY
 
     # Blueprints
     from app.api.clubs import bp as clubs_bp
     from app.api.health import bp as health_bp
     from app.api.teamsnap import bp as teamsnap_bp
     from app.api.users import bp as users_bp
+    from app.api.billing import bp as billing_bp
+    from app.api.stripe_webhook import bp as stripe_bp
 
     app.register_blueprint(clubs_bp, url_prefix=f"{Config.API_PREFIX}/clubs")
     app.register_blueprint(health_bp, url_prefix=f"{Config.API_PREFIX}/health")
     app.register_blueprint(teamsnap_bp, url_prefix=f"{Config.API_PREFIX}/auth/teamsnap")
     app.register_blueprint(users_bp, url_prefix=f"{Config.API_PREFIX}/users")
+    app.register_blueprint(billing_bp, url_prefix=f"{Config.API_PREFIX}/billing")
+    app.register_blueprint(stripe_bp, url_prefix=f"{Config.API_PREFIX}/stripe")
 
     return app
