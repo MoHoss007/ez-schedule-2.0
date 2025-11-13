@@ -10,7 +10,7 @@ from sqlalchemy import (
     JSON,
 )
 from sqlalchemy.orm import relationship
-from db.utils import now_utc
+from app.db.utils import now_utc
 import uuid
 from app.db.base import Base
 
@@ -51,7 +51,7 @@ class OAuthState(Base):
 class TeamSnapAccount(Base):
     __tablename__ = "teamsnap_accounts"
     id = Column(Integer, primary_key=True)
-    club_id = Column(ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False)
+    club_id = Column(ForeignKey("clubs.club_id", ondelete="CASCADE"), nullable=False)
     teamsnap_user_id = Column(String(64), nullable=False)  # from TeamSnap /me
     scope = Column(String(512), nullable=True)
 

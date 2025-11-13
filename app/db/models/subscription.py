@@ -11,7 +11,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.db.base import Base
-from db.utils import now_utc
+from app.db.utils import now_utc
 from typing import Optional
 from app.db.session import get_session
 import enum
