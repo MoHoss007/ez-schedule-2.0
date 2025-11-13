@@ -19,10 +19,10 @@ ALEMBIC_INI = Path("/var/task/alembic.ini")
 
 def _get_database_url() -> str:
     # Allow override by env var (handy for testing)
-    url = os.getenv("DATABASE_URL")
+    url = os.getenv("EZ_SCHEDULE_DB_URI")
     if url:
         return url
-    raise RuntimeError("DATABASE_URL not found in secret")
+    raise RuntimeError("EZ_SCHEDULE_DB_URI not found in secret")
 
 
 def _alembic_config(db_url: str) -> Config:
