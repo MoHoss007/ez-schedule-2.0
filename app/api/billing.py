@@ -23,7 +23,7 @@ def create_checkout_session():
         if not user:
             return jsonify({"error": "user not found"}), 404
 
-        user_email = user.email  # ✅ load while session is open
+        user_email = user.email
 
     price_id = _cfg("STRIPE_PRICE_ID")
     if not price_id:
@@ -31,9 +31,9 @@ def create_checkout_session():
 
     stripe_session = stripe.checkout.Session.create(
         mode="subscription",
-        success_url=f"{_cfg('APP_BASE_URL')}/{_cfg('API_PREFIX')}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{_cfg('APP_BASE_URL')}/{_cfg('API_PREFIX')}/billing/cancel",
-        customer_email=user_email,  # ✅ use the plain string
+        success_url=_cfg("STRIPE_SUCCESS_URL"),
+        cancel_url=_cfg("STRIPE_CANCEL_URL"),
+        customer_email=user_email,
         line_items=[
             {
                 "price": price_id,
