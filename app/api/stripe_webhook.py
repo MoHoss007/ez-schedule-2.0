@@ -61,11 +61,13 @@ def webhook():
             if not user:
                 user = User(email=email)
                 db.add(user)
-                db.flush()  # so user.id is available
+                db.flush()  # so user.user_id is available
 
             # one-sub-per-user policy: update existing row if present
             existing = (
-                db.query(Subscription).filter(Subscription.user_id == user.id).first()
+                db.query(Subscription)
+                .filter(Subscription.user_id == user.user_id)
+                .first()
             )
             if existing:
                 existing.stripe_customer_id = customer_id
@@ -76,7 +78,7 @@ def webhook():
                 existing.status = SubscriptionStatus.active
             else:
                 sub = Subscription(
-                    user_id=user.id,
+                    user_id=user.user_id,
                     stripe_customer_id=customer_id,
                     stripe_subscription_id=subscription_id,
                     current_teams=quantity,

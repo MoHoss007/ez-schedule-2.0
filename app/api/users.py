@@ -126,17 +126,17 @@ def signup():
             email=email, username=username, password_hash=hash_password(password)
         )
         db.add(user)
-        db.flush()  # get user.id
+        db.flush()  # get user.user_id
 
         user.last_login_at = datetime.now(timezone.utc)  # type: ignore
 
-        access = make_access_token(user.id)  # type: ignore
-        refresh = make_refresh_token(user.id)  # type: ignore
+        access = make_access_token(user.user_id)  # type: ignore
+        refresh = make_refresh_token(user.user_id)  # type: ignore
 
         resp = make_response(
             jsonify(
                 {
-                    "id": user.id,
+                    "id": user.user_id,
                     "ok": True,
                     "email": user.email,
                     "username": user.username,
@@ -170,16 +170,16 @@ def login():
 
         user.last_login_at = datetime.now(timezone.utc)  # type: ignore
 
-        access = make_access_token(user.id)  # type: ignore
-        refresh = make_refresh_token(user.id)  # type: ignore
+        access = make_access_token(user.user_id)  # type: ignore
+        refresh = make_refresh_token(user.user_id)  # type: ignore
 
-        logger.info(f"Login successful for user {user.id} ({email})")
+        logger.info(f"Login successful for user {user.user_id} ({email})")
 
         resp = make_response(
             jsonify(
                 {
                     "ok": True,
-                    "id": user.id,
+                    "id": user.user_id,
                     "email": user.email,
                     "username": user.username,
                 }
