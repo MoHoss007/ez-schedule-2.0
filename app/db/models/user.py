@@ -21,5 +21,13 @@ class User(Base):
         passive_deletes=True,
     )
 
+    subscription = relationship(
+        "Subscription",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
     def __repr__(self):
         return f"<User user_id={self.user_id} email={self.email!r}>"
