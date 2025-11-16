@@ -91,21 +91,62 @@ def _drop_all_tables(db_url: str):
 
     print("=== [RESET] Done dropping all tables ===")
 
+def _run_query(db_url: str, sql: str, params: dict | None = None, allow_write: bool = False):
+    """
+    Execute a SQL statement and print the results to CloudWatch logs.
+
+    Event usage:
+      {
+        "action": "query",
+        "sql": "SELECT * FROM users LIMIT 5",
+        "params": {"user_id": 1},        # optional
+        "allow_write": true              # required for INSERT/UPDATE/DELETE, etc.
+      }
+    """
+    sql_stripped = sql.strip()
+    first_word = sql_stripped.split()[0].lower() if sql_stripped else ""
+
+    # Simple safety: by default only allow read-only queries
+    read_only_starts = ("select", "show", "describe", "explain")
+    if not allow_write and first_word not in read_only_starts:
+        raise ValueError(
+            "Refusing to run non-read-only query without allow_write=true. "
+            f"First word was: {first_word!r}"
+        )
+
+    print("=== [QUERY] Connecting to DB ===")
+    engine = create_engine(db_url)
+
+    with engine.begin() as conn:
+        print(f"=== [QUERY] SQL ===\n{sql_stripped}")
+        if params:
+            print(f"=== [QUERY] PARAMS === {params}")
+        result = conn.execute(text(sql_stripped), params or {})
+
+        if result.returns_rows:
+            print("=== [QUERY] RESULT ROWS ===")
+            for row in result:
+                # row is a Row object; convert to tuple for clean printing
+                print(tuple(row))
+        else:
+            print(f"=== [QUERY] ROWCOUNT === {result.rowcount}")
+
+
 
 def lambda_handler(event, context):
     """
     Event (optional):
       {
-        "action": "upgrade" | "stamp" | "downgrade" | "inspect" | "reset",
+        "action": "upgrade" | "stamp" | "downgrade" | "inspect" | "reset" | "query",
         "revision": "head" | "<rev>" | "-1",
-        "confirm": "DROP_ALL_TABLES"   # optional safety for reset
+        "confirm": "DROP_ALL_TABLES",   # optional safety for reset
+        "sql": "...",                    # for query
+        "params": { ... },               # optional for query
+        "allow_write": true/false        # optional for query (default false)
       }
 
     Defaults: {"action":"upgrade","revision":"head"}
     """
-    event = event or {}
-    action = event.get("action", "upgrade")
-    revision = event.get("revision", "head")
     event = event or {}
     action = event.get("action", "upgrade")
     revision = event.get("revision", "head")
@@ -132,14 +173,24 @@ def lambda_handler(event, context):
 
     # reset action (drop all tables)
     if action == "reset":
-        # optional safety check
         confirm = event.get("confirm")
         if confirm != "DROP_ALL_TABLES":
             raise ValueError("Refusing to reset DB without confirm='DROP_ALL_TABLES'")
-
         log.warning("RESET action requested: dropping all tables in database!")
         _drop_all_tables(db_url)
         return {"ok": True, "action": action}
 
+    # NEW: arbitrary query action
+    if action == "query":
+        sql = event.get("sql")
+        if not sql:
+            raise ValueError("For action 'query', you must provide 'sql' in the event.")
+        params = event.get("params") or {}
+        allow_write = bool(event.get("allow_write", False))
+
+        _run_query(db_url, sql, params=params, allow_write=allow_write)
+        return {"ok": True, "action": action}
+
     # Unknown action
     raise ValueError(f"Unsupported action: {action}")
+
