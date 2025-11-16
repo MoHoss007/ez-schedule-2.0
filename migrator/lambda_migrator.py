@@ -4,7 +4,6 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 
-# NEW: import SQLAlchemy for querying
 from sqlalchemy import create_engine, text
 
 log = logging.getLogger()
@@ -24,6 +23,7 @@ def _get_database_url() -> str:
     if url:
         return url
     raise RuntimeError("DATABASE_URL not found in secret")
+    raise RuntimeError("DATABASE_URL not found in secret")
 
 
 def _alembic_config(db_url: str) -> Config:
@@ -36,6 +36,7 @@ def _alembic_config(db_url: str) -> Config:
     cfg.set_main_option("sqlalchemy.url", db_url)
     return cfg
 
+
 def _inspect_tables(db_url: str):
     """Prints all table names in the database."""
     print("=== [INSPECT] Connecting to DB ===")
@@ -45,8 +46,8 @@ def _inspect_tables(db_url: str):
         print("=== [INSPECT] SHOW TABLES ===")
         result = conn.execute(text("SHOW TABLES"))
         for row in result:
-            # Row is like: ('users',)
             print(f"- {row[0]}")
+
 
 def _inspect_alembic_version(db_url: str):
     engine = create_engine(db_url)
@@ -59,17 +60,52 @@ def _inspect_alembic_version(db_url: str):
         except Exception as e:
             print(f"Error reading alembic_version: {e}")
 
+
+def _drop_all_tables(db_url: str):
+    """
+    Drops ALL tables in the current database (including alembic_version).
+    This is destructive. Use with care.
+    """
+    print("=== [RESET] Connecting to DB ===")
+    engine = create_engine(db_url)
+
+    # Use a transaction so we can commit all drops together
+    with engine.begin() as conn:
+        print("=== [RESET] Disabling foreign key checks ===")
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+
+        print("=== [RESET] Fetching tables ===")
+        result = conn.execute(text("SHOW TABLES"))
+        tables = [row[0] for row in result]
+
+        if not tables:
+            print("=== [RESET] No tables found ===")
+        else:
+            print("=== [RESET] Dropping tables ===")
+            for tbl in tables:
+                print(f"- Dropping table: {tbl}")
+                conn.execute(text(f"DROP TABLE IF EXISTS `{tbl}`"))
+
+        print("=== [RESET] Re-enabling foreign key checks ===")
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+
+    print("=== [RESET] Done dropping all tables ===")
+
+
 def lambda_handler(event, context):
     """
     Event (optional):
-      { "action": "upgrade" | "stamp" | "downgrade" | "inspect",
+      {
+        "action": "upgrade" | "stamp" | "downgrade" | "inspect" | "reset",
         "revision": "head" | "<rev>" | "-1",
-        "table": "users",
-        "limit": 10
+        "confirm": "DROP_ALL_TABLES"   # optional safety for reset
       }
 
     Defaults: {"action":"upgrade","revision":"head"}
     """
+    event = event or {}
+    action = event.get("action", "upgrade")
+    revision = event.get("revision", "head")
     event = event or {}
     action = event.get("action", "upgrade")
     revision = event.get("revision", "head")
@@ -88,10 +124,21 @@ def lambda_handler(event, context):
             command.stamp(cfg, revision)
         return {"ok": True, "action": action, "revision": revision}
 
-    # NEW: inspect action
+    # Inspect action
     if action == "inspect":
         _inspect_alembic_version(db_url)
         _inspect_tables(db_url)
+        return {"ok": True, "action": action}
+
+    # reset action (drop all tables)
+    if action == "reset":
+        # optional safety check
+        confirm = event.get("confirm")
+        if confirm != "DROP_ALL_TABLES":
+            raise ValueError("Refusing to reset DB without confirm='DROP_ALL_TABLES'")
+
+        log.warning("RESET action requested: dropping all tables in database!")
+        _drop_all_tables(db_url)
         return {"ok": True, "action": action}
 
     # Unknown action
