@@ -11,9 +11,6 @@ bp = Blueprint("billing_api", __name__)
 
 @bp.post("/checkout-sessions")
 def create_checkout_session():
-    """
-    Create a Stripe Checkout Session for a subscription.
-    """
     data = request.get_json() or {}
     user_id = data.get("user_id")
     teams = data.get("teams")
@@ -23,9 +20,10 @@ def create_checkout_session():
 
     with get_session() as session:
         user = session.query(User).filter(User.user_id == int(user_id)).first()
+        if not user:
+            return jsonify({"error": "user not found"}), 404
 
-    if not user:
-        return jsonify({"error": "user not found"}), 404
+        user_email = user.email  # ✅ load while session is open
 
     price_id = _cfg("STRIPE_PRICE_ID")
     if not price_id:
@@ -35,7 +33,7 @@ def create_checkout_session():
         mode="subscription",
         success_url=f"{_cfg('APP_BASE_URL')}/{_cfg('API_PREFIX')}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{_cfg('APP_BASE_URL')}/{_cfg('API_PREFIX')}/billing/cancel",
-        customer_email=user.email,
+        customer_email=user_email,  # ✅ use the plain string
         line_items=[
             {
                 "price": price_id,
@@ -59,6 +57,8 @@ def create_checkout_session():
 def list_subscriptions():
     user_email = request.args.get("user_email")
     user_id = request.args.get("user_id")
+
+    # always extract data inside the session block
     with get_session() as session:
         q = session.query(Subscription)
         if user_email:
@@ -66,12 +66,12 @@ def list_subscriptions():
         if user_id:
             q = q.filter(Subscription.user_id == int(user_id))
 
-    subs = q.all()
+        subs = q.all()
 
-    return jsonify(
-        [
+        # convert inside session
+        results = [
             {
-                "id": s.id,
+                "id": s.subscription_id,
                 "user_id": s.user_id,
                 "stripe_subscription_id": s.stripe_subscription_id,
                 "current_teams": s.current_teams,
@@ -85,18 +85,24 @@ def list_subscriptions():
             }
             for s in subs
         ]
-    )
+
+    return jsonify(results)
 
 
 @bp.get("/subscriptions/<int:sub_id>")
 def get_subscription(sub_id):
     with get_session() as session:
-        s = session.query(Subscription).filter(Subscription.id == sub_id).first()
-    if not s:
-        return jsonify({"error": "subscription not found"}), 404
-    return jsonify(
-        {
-            "id": s.id,
+        s = (
+            session.query(Subscription)
+            .filter(Subscription.subscription_id == sub_id)
+            .first()
+        )
+
+        if not s:
+            return jsonify({"error": "subscription not found"}), 404
+
+        result = {
+            "id": s.subscription_id,
             "user_id": s.user_id,
             "stripe_subscription_id": s.stripe_subscription_id,
             "current_teams": s.current_teams,
@@ -108,7 +114,8 @@ def get_subscription(sub_id):
                 else None
             ),
         }
-    )
+
+    return jsonify(result)
 
 
 @bp.patch("/subscriptions/<int:sub_id>")
