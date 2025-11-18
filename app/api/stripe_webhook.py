@@ -50,6 +50,9 @@ def webhook():
                 return "missing fields", 200
 
             stripe_sub = stripe.Subscription.retrieve(subscription_id, expand=["items"])
+            logger.info(
+                f"Retrieved subscription from Stripe: {stripe_sub}, keys are {list(stripe_sub.keys())}"
+            )
             item = stripe_sub["items"]["data"][0]
             quantity = item["quantity"]
             cpe = datetime.fromtimestamp(
