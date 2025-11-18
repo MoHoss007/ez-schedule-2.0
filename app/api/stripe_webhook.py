@@ -5,6 +5,11 @@ from sqlalchemy.exc import IntegrityError
 from app.db.session import get_session
 from app.db.models import User, Subscription, SubscriptionStatus
 from stripe.error import SignatureVerificationError
+from app.api.utils import _cfg
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint("stripe", __name__)
 
@@ -15,28 +20,24 @@ def webhook():
         payload = request.data
         sig = request.headers.get("Stripe-Signature")
 
-        # Better: set once at app startup. Safe here too.
-        stripe.api_key = current_app.config["STRIPE_SECRET_KEY"]
-        endpoint_secret = current_app.config["STRIPE_WEBHOOK_SECRET"]
+        stripe.api_key = _cfg("STRIPE_SECRET_KEY")
+        endpoint_secret = _cfg("STRIPE_WEBHOOK_SECRET")
 
-        # 1) Safer construction: catch JSON parse + sig errors
         try:
             event = stripe.Webhook.construct_event(payload, sig, endpoint_secret)
+            logger.info(f"Received event: {event['type']}")
         except ValueError:
+            logger.error("Invalid payload")
             return "invalid payload", 400
         except SignatureVerificationError:
+            logger.error("Bad signature")
             return "bad sig", 400
-
-        # 2) Idempotency guard (optional but recommended)
-        # if db.query(StripeEventLog).filter_by(event_id=event["id"]).first():
-        #     return "ok", 200
-        # db.add(StripeEventLog(event_id=event["id"]))
 
         etype = event["type"]
         obj = event["data"]["object"]
 
-        # 1) When checkout finishes
         if etype == "checkout.session.completed":
+            logger.info("Processing checkout.session.completed webhook")
             session_obj = obj
             customer_id = session_obj.get("customer")
             subscription_id = session_obj.get("subscription")
@@ -45,10 +46,9 @@ def webhook():
             ) or session_obj.get("customer_email")
 
             if not (customer_id and subscription_id and email):
-                # Don’t proceed if critical identifiers are missing
+                logger.error("Missing fields in checkout.session.completed webhook")
                 return "missing fields", 200
 
-            # Fetch sub to read quantity and current_period_end
             stripe_sub = stripe.Subscription.retrieve(subscription_id, expand=["items"])
             item = stripe_sub["items"]["data"][0]
             quantity = item["quantity"]
@@ -56,20 +56,21 @@ def webhook():
                 stripe_sub["current_period_end"], tz=timezone.utc
             )
 
-            # user
             user = db.query(User).filter(User.email == email).first()
             if not user:
                 user = User(email=email)
                 db.add(user)
-                db.flush()  # so user.user_id is available
+                db.flush()
 
-            # one-sub-per-user policy: update existing row if present
             existing = (
                 db.query(Subscription)
                 .filter(Subscription.user_id == user.user_id)
                 .first()
             )
             if existing:
+                logger.info(
+                    f"Updating existing subscription for user_id={user.user_id}"
+                )
                 existing.stripe_customer_id = customer_id
                 existing.stripe_subscription_id = subscription_id
                 existing.current_teams = quantity
@@ -77,6 +78,7 @@ def webhook():
                 existing.current_period_end = cpe  # type: ignore
                 existing.status = SubscriptionStatus.active
             else:
+                logger.info(f"Creating new subscription for user_id={user.user_id}")
                 sub = Subscription(
                     user_id=user.user_id,
                     stripe_customer_id=customer_id,
@@ -88,22 +90,23 @@ def webhook():
                 )
                 db.add(sub)
 
-            # If you have uniques on stripe ids, guard for races
             try:
-                # commit is done by context manager on exit, but this
-                # helps surface integrity errors here if you prefer:
                 db.flush()
             except IntegrityError:
                 db.rollback()
+                logger.error(
+                    "Integrity error while flushing subscription data", exc_info=True
+                )
                 return "conflict", 409
 
             return "ok", 200
 
-        # 2) Before Stripe invoices -> sync our future_teams to Stripe
         elif etype == "invoice.upcoming":
+            logger.info("Processing invoice.upcoming webhook")
             invoice = obj
             sub_id = invoice.get("subscription")
             if not sub_id:
+                logger.info("invoice.upcoming webhook missing subscription id")
                 return "ok", 200
 
             sub_rec = (
@@ -112,6 +115,9 @@ def webhook():
                 .first()
             )
             if not sub_rec:
+                logger.info(
+                    f"No subscription record found for stripe_subscription_id={sub_id}"
+                )
                 return "ok", 200
 
             if sub_rec.future_teams != sub_rec.current_teams:  # type: ignore
@@ -131,8 +137,8 @@ def webhook():
 
             return "ok", 200
 
-        # 3) Keep status & period end in sync during lifecycle updates
         elif etype == "customer.subscription.updated":
+            logger.info("Processing customer.subscription.updated webhook")
             sub = obj
             sub_id = sub["id"]
 
@@ -146,7 +152,10 @@ def webhook():
                 try:
                     rec.status = SubscriptionStatus(stripe_status)
                 except Exception:
-                    pass
+                    logger.error(
+                        f"Error updating subscription status for stripe_subscription_id={sub_id}",
+                        exc_info=True,
+                    )
 
                 cpe = sub.get("current_period_end")
                 if cpe:
@@ -156,8 +165,8 @@ def webhook():
 
             return "ok", 200
 
-        # 4) Subscription ended
         elif etype == "customer.subscription.deleted":
+            logger.info("Processing customer.subscription.deleted webhook")
             sub = obj
             sub_id = sub["id"]
 
@@ -171,8 +180,8 @@ def webhook():
 
             return "ok", 200
 
-        # 5) (Optional but useful) Mark the new period after payment success
         elif etype == "invoice.payment_succeeded":
+            logger.info("Processing invoice.payment_succeeded webhook")
             inv = obj
             sub_id = inv.get("subscription")
             if sub_id:
@@ -182,7 +191,6 @@ def webhook():
                     .first()
                 )
                 if rec:
-                    # On payment success, the period has advanced; refresh from Stripe for accurate CPE
                     s = stripe.Subscription.retrieve(sub_id)
                     rec.current_period_end = datetime.fromtimestamp(  # type: ignore
                         s["current_period_end"], tz=timezone.utc
