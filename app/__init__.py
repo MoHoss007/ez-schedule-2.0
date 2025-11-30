@@ -23,16 +23,15 @@ def create_app() -> Flask:
     stripe.api_key = Config.STRIPE_SECRET_KEY
 
     # Blueprints
-    from app.api.clubs import bp as clubs_bp
     from app.api.health import bp as health_bp
-    from app.api.teamsnap import bp as teamsnap_bp
-    from app.api.users import bp as users_bp
-    from app.api.billing import bp as billing_bp
-    from app.api.stripe_webhook import bp as stripe_bp
 
-    app.register_blueprint(clubs_bp, url_prefix=f"{Config.API_PREFIX}/clubs")
+    # from app.api.integrations.teamsnap import bp as teamsnap_bp
+    from app.api.auth.users import bp as users_bp
+    from app.api.billing.subscriptions import bp as billing_bp
+    from app.api.billing.stripe_webhook import bp as stripe_bp
+
     app.register_blueprint(health_bp, url_prefix=f"{Config.API_PREFIX}/health")
-    app.register_blueprint(teamsnap_bp, url_prefix=f"{Config.API_PREFIX}/auth/teamsnap")
+    # app.register_blueprint(teamsnap_bp, url_prefix=f"{Config.API_PREFIX}/auth/teamsnap")
     app.register_blueprint(users_bp, url_prefix=f"{Config.API_PREFIX}/users")
     app.register_blueprint(billing_bp, url_prefix=f"{Config.API_PREFIX}/billing")
     app.register_blueprint(stripe_bp, url_prefix=f"{Config.API_PREFIX}/stripe")
