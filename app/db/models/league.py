@@ -16,6 +16,7 @@ from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 from app.db.utils import now_utc
+from enum import Enum
 
 
 class League(Base):
@@ -26,6 +27,8 @@ class League(Base):
     name = Column(String(255), nullable=False)
     code = Column(String(64), nullable=False, unique=True, index=True)
     timezone = Column(String(64), nullable=False, default="America/Toronto")
+    age_group = Column(String(64), nullable=True)
+    division = Column(String(64), nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
@@ -94,7 +97,7 @@ class LeagueSeason(Base):
         return f"<LeagueSeason id={self.league_season_id} name={self.name!r}>"
 
 
-class PricingModel(str, Enum):
+class PricingModel(Enum):
     PER_TEAM = "per_team"
     FLAT = "flat"
 
@@ -117,7 +120,7 @@ class LeagueSeasonProduct(Base):
 
     stripe_price_id = Column(String(255), nullable=False, unique=True, index=True)
     pricing_model = Column(SAEnum(PricingModel), nullable=False)
-    metadata = Column(JSON, nullable=True)
+    product_metadata = Column(JSON, nullable=True)
 
     league_season = relationship("LeagueSeason", back_populates="products")
 

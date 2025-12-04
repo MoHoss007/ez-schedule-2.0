@@ -1,7 +1,6 @@
 from __future__ import annotations
 from sqlalchemy import (
     Column,
-    Enum,
     Integer,
     String,
     DateTime,
@@ -12,9 +11,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 from app.db.utils import now_utc
+from enum import Enum
 
 
-class SubscriptionStatus(str, Enum):
+class SubscriptionStatus(Enum):
     INCOMPLETE = "incomplete"
     INCOMPLETE_EXPIRED = "incomplete_expired"
     TRIALING = "trialing"

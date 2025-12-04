@@ -23,7 +23,6 @@ def _get_database_url() -> str:
     if url:
         return url
     raise RuntimeError("DATABASE_URL not found in secret")
-    raise RuntimeError("DATABASE_URL not found in secret")
 
 
 def _alembic_config(db_url: str) -> Config:
@@ -91,7 +90,10 @@ def _drop_all_tables(db_url: str):
 
     print("=== [RESET] Done dropping all tables ===")
 
-def _run_query(db_url: str, sql: str, params: dict | None = None, allow_write: bool = False):
+
+def _run_query(
+    db_url: str, sql: str, params: dict | None = None, allow_write: bool = False
+):
     """
     Execute a SQL statement and print the results to CloudWatch logs.
 
@@ -130,7 +132,6 @@ def _run_query(db_url: str, sql: str, params: dict | None = None, allow_write: b
                 print(tuple(row))
         else:
             print(f"=== [QUERY] ROWCOUNT === {result.rowcount}")
-
 
 
 def lambda_handler(event, context):
@@ -193,4 +194,3 @@ def lambda_handler(event, context):
 
     # Unknown action
     raise ValueError(f"Unsupported action: {action}")
-

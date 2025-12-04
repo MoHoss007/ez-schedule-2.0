@@ -8,6 +8,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Index,
     JSON,
+    Enum as SAEnum,
 )
 from sqlalchemy.orm import relationship
 from app.db.utils import now_utc
@@ -71,8 +72,6 @@ class Team(Base):
     )
 
     name = Column(String(255), nullable=False)
-    age_group = Column(String(64), nullable=True)
-    division = Column(String(64), nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
@@ -95,7 +94,7 @@ class Team(Base):
 # =========================================
 
 
-class AuthType(str, Enum):
+class AuthType(Enum):
     OAUTH2 = "oauth2"
     API_KEY = "api_key"
     OTHER = "other"
