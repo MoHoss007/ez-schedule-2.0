@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timezone
 from app.db.session import get_session
 from app.db.models import League
+import logging
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint("leagues_routes", __name__)
 
@@ -33,24 +36,28 @@ def list_leagues():
     """
     after = _parse_after_param()
 
-    with get_session() as session:
-        q = session.query(League)
+    try:
+        with get_session() as session:
+            q = session.query(League)
 
-        if after:
-            q = q.filter(League.created_at >= after)
+            if after:
+                q = q.filter(League.created_at >= after)
 
-        leagues = q.order_by(League.league_id.asc()).all()
+            leagues = q.order_by(League.league_id.asc()).all()
 
-        results = [
-            {
-                "league_id": l.league_id,
-                "name": l.name,
-                "code": l.code,
-                "timezone": l.timezone,
-                "created_at": l.created_at.isoformat() if l.created_at else None,  # type: ignore
-            }
-            for l in leagues
-        ]
+            results = [
+                {
+                    "league_id": l.league_id,
+                    "name": l.name,
+                    "code": l.code,
+                    "timezone": l.timezone,
+                    "created_at": l.created_at.isoformat() if l.created_at is not None else None,  # type: ignore
+                }
+                for l in leagues
+            ]
+    except Exception as e:
+        logger.error(f"Error listing leagues {e}", exc_info=True)
+        return jsonify({"error": "internal server error"}), 500
 
     return jsonify(results)
 
@@ -60,17 +67,21 @@ def get_league(league_id: int):
     """
     GET /api/v1/leagues/<league_id>
     """
-    with get_session() as session:
-        l = session.query(League).filter(League.league_id == league_id).first()
-        if not l:
-            return jsonify({"error": "league not found"}), 404
+    try:
+        with get_session() as session:
+            l = session.query(League).filter(League.league_id == league_id).first()
+            if not l:
+                return jsonify({"error": "league not found"}), 404
 
-        result = {
-            "league_id": l.league_id,
-            "name": l.name,
-            "code": l.code,
-            "timezone": l.timezone,
-            "created_at": l.created_at.isoformat() if l.created_at else None,  # type: ignore
-        }
+            result = {
+                "league_id": l.league_id,
+                "name": l.name,
+                "code": l.code,
+                "timezone": l.timezone,
+                "created_at": l.created_at.isoformat() if l.created_at is not None else None,  # type: ignore
+            }
+    except Exception as e:
+        logger.error(f"Error getting league {league_id}: {e}", exc_info=True)
+        return jsonify({"error": "internal server error"}), 500
 
     return jsonify(result)
