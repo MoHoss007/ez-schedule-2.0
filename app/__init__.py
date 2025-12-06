@@ -29,11 +29,17 @@ def create_app() -> Flask:
     from app.api.auth.users import bp as users_bp
     from app.api.billing.subscriptions import bp as billing_bp
     from app.api.billing.stripe_webhook import bp as stripe_bp
+    from app.api.leagues.leagues import bp as leagues_bp
+    from app.api.leagues.seasons import bp as seasons_bp
 
     app.register_blueprint(health_bp, url_prefix=f"{Config.API_PREFIX}/health")
     # app.register_blueprint(teamsnap_bp, url_prefix=f"{Config.API_PREFIX}/auth/teamsnap")
     app.register_blueprint(users_bp, url_prefix=f"{Config.API_PREFIX}/users")
     app.register_blueprint(billing_bp, url_prefix=f"{Config.API_PREFIX}/billing")
     app.register_blueprint(stripe_bp, url_prefix=f"{Config.API_PREFIX}/stripe")
+    app.register_blueprint(leagues_bp, url_prefix=f"{Config.API_PREFIX}/leagues")
+    app.register_blueprint(
+        seasons_bp, url_prefix=f"{Config.API_PREFIX}/leagues/seasons"
+    )
 
     return app
