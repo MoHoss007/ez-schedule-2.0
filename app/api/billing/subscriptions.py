@@ -108,7 +108,7 @@ def create_checkout_session():
 
             user_email = user.email
 
-        stripe_price_id = product.stripe_price_id
+            stripe_price_id = product.stripe_price_id
 
         stripe.api_key = _cfg("STRIPE_SECRET_KEY")
 
