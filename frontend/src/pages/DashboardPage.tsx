@@ -1,5 +1,5 @@
 // src/pages/DashboardPage.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Shell } from "../components/Shell";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
