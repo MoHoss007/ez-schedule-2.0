@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../lib/api";
 
 
-interface User { email: string; club?: string; teamsRegistered?: number }
+interface User { id: number; email: string; club?: string; teamsRegistered?: number }
 interface AuthCtx {
     user: User | null;
     loading: boolean;
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         api.me()
             .then((r) => {
-                if (r.authenticated) setUser({ email: r.email, club: r.club, teamsRegistered: r.teamsRegistered });
+                if (r.authenticated) setUser({ id: r.id, email: r.email, club: r.club, teamsRegistered: r.teamsRegistered });
                 else setUser(null);
             })
             .finally(() => setLoading(false));
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             if (me.authenticated) {
                 console.log("AuthContext: User authenticated, setting user state");
-                setUser({ email: me.email, club: me.club, teamsRegistered: me.teamsRegistered });
+                setUser({ id: me.id, email: me.email, club: me.club, teamsRegistered: me.teamsRegistered });
             } else {
                 console.log("AuthContext: User not authenticated according to /me endpoint");
             }
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (r.ok) {
                 // After successful registration, get user info and set state
                 const me = await api.me();
-                if (me.authenticated) setUser({ email: me.email, club: me.club, teamsRegistered: me.teamsRegistered });
+                if (me.authenticated) setUser({ id: me.id, email: me.email, club: me.club, teamsRegistered: me.teamsRegistered });
                 return true;
             }
             return false;

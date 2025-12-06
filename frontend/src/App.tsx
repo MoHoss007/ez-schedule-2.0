@@ -7,10 +7,7 @@ import HomePage from "./pages/HomePage";
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
-import RegisterTeamPage from "./pages/RegisterTeamPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import PaymentPage from "./pages/PaymentPage";
-import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import SubscriptionsPage from "./pages/SubscriptionsPage";
 
 
 export default function App() {
@@ -34,24 +31,9 @@ export default function App() {
               <DashboardPage />
             </ProtectedRoute>
           } />
-          <Route path="/register-team" element={
+          <Route path="/subscriptions" element={
             <ProtectedRoute>
-              <RegisterTeamPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/checkout" element={
-            <ProtectedRoute>
-              <CheckoutPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/payment" element={
-            <ProtectedRoute>
-              <PaymentPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/payment/success" element={
-            <ProtectedRoute>
-              <PaymentSuccessPage />
+              <SubscriptionsPage />
             </ProtectedRoute>
           } />
         </Routes>

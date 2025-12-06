@@ -10,8 +10,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const { user, loading } = useAuth();
     const location = useLocation();
 
-    // Show loading spinner while checking authentication
-    if (loading) {
+    // Only show loading spinner if we're still checking AND user is not yet determined
+    if (loading && !user) {
         return (
             <div style={{ 
                 display: 'flex', 

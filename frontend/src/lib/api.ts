@@ -228,6 +228,121 @@ export const api = {
         }
         return res.json();
     },
+    
+    // New subscription endpoints
+    async getLeagues() {
+        try {
+            const headers = await getAWSHeaders("GET", `${API_BASE}/api/v1/leagues`);
+            const res = await fetch(`${API_BASE}/api/v1/leagues`, {
+                headers,
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error("Failed to fetch leagues");
+            const leagues = await res.json();
+            
+            // Transform backend response to frontend format
+            return {
+                ok: true,
+                leagues: leagues.map((l: any) => ({
+                    id: l.league_id,
+                    name: l.name
+                }))
+            };
+        } catch (error) {
+            console.error("Failed to fetch leagues:", error);
+            return { ok: false, leagues: [] };
+        }
+    },
+    
+    async getSeasons(leagueId: number) {
+        try {
+            const url = `${API_BASE}/api/v1/leagues/seasons?league_id=${leagueId}`;
+            const headers = await getAWSHeaders("GET", url);
+            const res = await fetch(url, {
+                headers,
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error("Failed to fetch seasons");
+            const seasons = await res.json();
+            
+            // Transform backend response to frontend format
+            return {
+                ok: true,
+                seasons: seasons.map((s: any) => ({
+                    id: s.league_season_id,
+                    name: s.name,
+                    year: new Date(s.season_start).getFullYear().toString()
+                }))
+            };
+        } catch (error) {
+            console.error("Failed to fetch seasons:", error);
+            return { ok: false, seasons: [] };
+        }
+    },
+
+    async getSubscriptions(userId: number) {
+        const url = `${API_BASE}/api/v1/billing/subscriptions?user_id=${userId}`;
+        const headers = await getAWSHeaders("GET", url);
+        const res = await fetch(url, {
+            headers,
+            credentials: "include",
+        });
+        if (!res.ok) {
+            throw new Error("Failed to load subscriptions");
+        }
+        return res.json();
+    },
+
+
+    
+    async createSubscription(data: {
+        userId: number;
+        leagueId: number;
+        seasonId: number;
+        numberOfTeams: number;
+    }) {
+        try {
+            // Note: This creates a Stripe checkout session
+            // The backend expects: user_id, league_season_id, team_limit
+            const body = JSON.stringify({
+                user_id: data.userId,
+                league_season_id: data.seasonId,
+                team_limit: data.numberOfTeams,
+            });
+            
+            const headers = await getAWSHeaders("POST", `${API_BASE}/api/v1/billing/checkout-sessions`, body);
+            const res = await fetch(`${API_BASE}/api/v1/billing/checkout-sessions`, {
+                method: "POST",
+                headers,
+                credentials: "include",
+                body,
+            });
+            
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to create subscription");
+            }
+            
+            const result = await res.json();
+            
+            // Redirect to Stripe checkout
+            if (result.url) {
+                window.location.href = result.url;
+            }
+            
+            return {
+                ok: true,
+                subscription: {
+                    id: result.checkout_session_id,
+                    ...data,
+                    createdAt: new Date().toISOString()
+                }
+            };
+        } catch (error) {
+            console.error("Failed to create subscription:", error);
+            return { ok: false, error: error instanceof Error ? error.message : "Failed to create subscription" };
+        }
+    },
 };
 
 // ========================= Flask endpoints =========================

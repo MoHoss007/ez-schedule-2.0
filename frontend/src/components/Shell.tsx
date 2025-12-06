@@ -1,84 +1,71 @@
-import React, { useState } from "react";
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import React from "react";
+import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import "./TopNav.css"; // we'll add this next
+import "./TopNav.css";
 
-export default function Shell({ children }: { children: React.ReactNode }) {
-    const { user, logout } = useAuth();
-    const [logoutMessage, setLogoutMessage] = useState("");
-    const navigate = useNavigate();
+interface ShellProps {
+  children: React.ReactNode;
+}
 
-    const handleLogout = async () => {
-        await logout();
-        setLogoutMessage("Logged out successfully");
-        setTimeout(() => setLogoutMessage(""), 3000); // Clear message after 3 seconds
-        // Navigate to home page after logout
-        navigate("/");
-    };
+export function Shell({ children }: ShellProps) {
+  const { user, logout } = useAuth();
 
-    return (
-        <div className="page-wrap">
-            <header className="topbar">
-                <div className="container">
-                    <Link to="/" className="brand">EZ-Schedule</Link>
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    "topnav-link" + (isActive ? " topnav-link-active" : "");
 
-                    <nav className="tabs">
-                        <NavLink to="/" end className={({ isActive }) => isActive ? "tab active" : "tab"}>Home</NavLink>
-                        {!user ? (
-                            <>
-                                <NavLink to="/register" className={({ isActive }) => isActive ? "tab active" : "tab"}>Register</NavLink>
-                                <NavLink to="/login" className={({ isActive }) => isActive ? "tab active" : "tab"}>Login</NavLink>
-                            </>
-                        ) : (
-                            <>
-                                <NavLink to="/dashboard" className={({ isActive }) => isActive ? "tab active" : "tab"}>Dashboard</NavLink>
-                                <NavLink to="/register-team" className={({ isActive }) => isActive ? "tab active" : "tab"}>Register Team</NavLink>
-                                <NavLink to="/checkout" className={({ isActive }) => isActive ? "tab active" : "tab"}>Checkout</NavLink>
-                                <NavLink to="/payment" className={({ isActive }) => isActive ? "tab active" : "tab"}>Payment</NavLink>
-                            </>
-                        )}
-                    </nav>
+  return (
+    <div className="app-shell">
+      {/* Top navigation */}
+      <header className="topnav">
+  <div className="topnav-inner">
+    <Link to="/" className="topnav-logo">
+      EZ-Schedule
+    </Link>
 
-                    <div className="right">
-                        {logoutMessage && (
-                            <div className="logout-message" style={{ 
-                                color: '#64BB7E', 
-                                fontSize: '0.875rem', 
-                                marginRight: '1rem',
-                                fontWeight: '500'
-                            }}>
-                                {logoutMessage}
-                            </div>
-                        )}
-                        {user ? (
-                            <>
-                                <div className="who">
-                                    <div className="club">{user.club}</div>
-                                    <div className="email">{user.email}</div>
-                                </div>
-                                <button className="btn" onClick={handleLogout}>Logout</button>
-                            </>
-                        ) : (
-                            <div className="who who--anon">Not signed in</div>
-                        )}
-                    </div>
-                </div>
-            </header>
+    {/* Right-side links */}
+    <div className="topnav-right">
+      <nav className="topnav-main">
+        <NavLink to="/" className={navLinkClass} end>
+          Home
+        </NavLink>
 
-            {/* keep your gradient/background for the page body */}
-      // ...
-            <main className="content">
-                <div className="content-inner">
-                    {/* NEW: global centering wrapper so all pages are centered */}
-                    <div className="center-all">
-                        {children}
-                    </div>
-                </div>
-            </main>
-            {/* ... */}
+        {!user && (
+          <>
+            <NavLink to="/login" className="nav-login-link">
+              Log in
+            </NavLink>
+            <NavLink to="/register" className="nav-signup-btn">
+              Get started
+            </NavLink>
+          </>
+        )}
+
+        {user && (
+          <>
+            <NavLink to="/dashboard" className={navLinkClass}>
+              Dashboard
+            </NavLink>
+            <NavLink to="/subscriptions" className={navLinkClass}>
+              Subscriptions
+            </NavLink>
+            <button onClick={logout} className="topnav-logout-btn">
+              Logout
+            </button>
+          </>
+        )}
+      </nav>
+    </div>
+  </div>
+</header>
 
 
-            <footer className="footer">© {new Date().getFullYear()} EZ-Schedule</footer>
-        </div>
-    );
+      {/* Main content */}
+      <main className="app-main">{children}</main>
+
+      {/* Optional small footer */}
+      <footer className="app-footer">
+        <span>© {new Date().getFullYear()} EZ-Schedule</span>
+      </footer>
+    </div>
+  );
 }
