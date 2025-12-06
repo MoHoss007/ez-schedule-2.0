@@ -30,7 +30,7 @@ class League(Base):
     age_group = Column(String(64), nullable=True)
     division = Column(String(64), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     league_seasons = relationship(
@@ -70,7 +70,7 @@ class LeagueSeason(Base):
     # Deadline for changing team_limit for this season
     change_deadline_for_current = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
 
     league = relationship("League", back_populates="league_seasons")
 

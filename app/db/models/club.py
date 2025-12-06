@@ -35,7 +35,7 @@ class Club(Base):
     display_name = Column(String(255), nullable=False)
     contact_email = Column(String(255), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     owner = relationship("User", back_populates="clubs")
@@ -73,7 +73,7 @@ class Team(Base):
 
     name = Column(String(255), nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     club = relationship("Club", back_populates="teams")
@@ -110,7 +110,7 @@ class IntegrationProvider(Base):
 
     auth_type = Column(SAEnum(AuthType), nullable=False, default=AuthType.OAUTH2)  # type: ignore
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
 
     integration_accounts = relationship(
         "IntegrationAccount",
@@ -154,8 +154,8 @@ class IntegrationAccount(Base):
     refresh_token_enc = Column(String(2048), nullable=True)
     access_token_expires_at = Column(DateTime(timezone=True), nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
 
     user = relationship("User", back_populates="integration_accounts")
     provider = relationship(
@@ -222,7 +222,7 @@ class ClubIntegration(Base):
     external_name = Column(String(255), nullable=True)
     external_raw = Column(JSON, nullable=True)  # snapshot of provider response
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
 
     club = relationship("Club", back_populates="club_integrations")
     integration_account = relationship(
@@ -278,7 +278,7 @@ class TeamIntegration(Base):
     external_name = Column(String(255), nullable=True)
     external_raw = Column(JSON, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
 
     team = relationship("Team", back_populates="team_integrations")
     club_integration = relationship(
@@ -329,7 +329,7 @@ class OAuthState(Base):
         index=True,
     )
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
 
     code_verifier = Column(String(256), nullable=True)

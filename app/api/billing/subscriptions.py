@@ -16,6 +16,9 @@ from app.db.models import (
     LeagueSeasonProduct,
 )
 from app.api.utils import _cfg
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 bp = Blueprint("billing_api", __name__)
@@ -49,96 +52,106 @@ def create_checkout_session():
     team_limit = int(team_limit)
 
     now = datetime.now(timezone.utc)
+    try:
+        with get_session() as session:
+            user = session.query(User).filter(User.user_id == int(user_id)).first()
+            if not user:
+                return jsonify({"error": "user not found"}), 404
 
-    with get_session() as session:
-        user = session.query(User).filter(User.user_id == int(user_id)).first()
-        if not user:
-            return jsonify({"error": "user not found"}), 404
-
-        league_season = (
-            session.query(LeagueSeason)
-            .filter(LeagueSeason.league_season_id == int(league_season_id))
-            .first()
-        )
-        if not league_season:
-            return jsonify({"error": "league_season not found"}), 404
-
-        # Optional: enforce subscription window
-        if not (
-            league_season.subscription_open_at  # type: ignore
-            <= now
-            <= league_season.subscription_close_at
-        ):
-            return (
-                jsonify(
-                    {
-                        "error": "subscriptions are not open for this season",
-                        "season_id": league_season_id,
-                    }
-                ),
-                400,
+            league_season = (
+                session.query(LeagueSeason)
+                .filter(LeagueSeason.league_season_id == int(league_season_id))
+                .first()
             )
+            if not league_season:
+                return jsonify({"error": "league_season not found"}), 404
 
-        product = (
-            session.query(LeagueSeasonProduct)
-            .filter(
-                LeagueSeasonProduct.league_season_id == league_season.league_season_id
+            # Optional: enforce subscription window
+            logger.info(
+                f"Checking subscription window for league_season_id={league_season_id} at {now.isoformat()}"
             )
-            .first()
-        )
-        if not product:
-            return (
-                jsonify(
-                    {
-                        "error": "Stripe price not configured for this league season",
-                        "league_season_id": league_season_id,
-                    }
-                ),
-                500,
+            logger.info(
+                f"Subscription open at: {league_season.subscription_open_at}, close at: {league_season.subscription_close_at}"
             )
+            if not (
+                league_season.subscription_open_at  # type: ignore
+                <= now
+                <= league_season.subscription_close_at
+            ):
+                return (
+                    jsonify(
+                        {
+                            "error": "subscriptions are not open for this season",
+                            "season_id": league_season_id,
+                        }
+                    ),
+                    400,
+                )
 
-        user_email = user.email
+            product = (
+                session.query(LeagueSeasonProduct)
+                .filter(
+                    LeagueSeasonProduct.league_season_id
+                    == league_season.league_season_id
+                )
+                .first()
+            )
+            if not product:
+                return (
+                    jsonify(
+                        {
+                            "error": "Stripe price not configured for this league season",
+                            "league_season_id": league_season_id,
+                        }
+                    ),
+                    500,
+                )
 
-    stripe_price_id = product.stripe_price_id
+            user_email = user.email
 
-    stripe.api_key = _cfg("STRIPE_SECRET_KEY")
+        stripe_price_id = product.stripe_price_id
 
-    # Encode useful metadata so webhooks can reconstruct Subscription rows
-    stripe_session = stripe.checkout.Session.create(
-        mode="subscription",
-        success_url=_cfg("STRIPE_SUCCESS_URL"),
-        cancel_url=_cfg("STRIPE_CANCEL_URL"),
-        customer_email=user_email,
-        line_items=[
-            {
-                "price": stripe_price_id,
-                "quantity": team_limit,
-            }
-        ],
-        client_reference_id=str(user_id),
-        subscription_data={
-            "metadata": {
+        stripe.api_key = _cfg("STRIPE_SECRET_KEY")
+
+        # Encode useful metadata so webhooks can reconstruct Subscription rows
+        stripe_session = stripe.checkout.Session.create(
+            mode="subscription",
+            success_url=_cfg("STRIPE_SUCCESS_URL"),
+            cancel_url=_cfg("STRIPE_CANCEL_URL"),
+            customer_email=user_email,
+            line_items=[
+                {
+                    "price": stripe_price_id,
+                    "quantity": team_limit,
+                }
+            ],
+            client_reference_id=str(user_id),
+            subscription_data={
+                "metadata": {
+                    "user_id": str(user_id),
+                    "league_season_id": str(league_season_id),
+                    "team_limit": str(team_limit),
+                }
+            },
+            metadata={
                 "user_id": str(user_id),
                 "league_season_id": str(league_season_id),
                 "team_limit": str(team_limit),
-            }
-        },
-        metadata={
-            "user_id": str(user_id),
-            "league_season_id": str(league_season_id),
-            "team_limit": str(team_limit),
-        },
-    )
+            },
+        )
 
-    return (
-        jsonify(
-            {
-                "checkout_session_id": stripe_session.id,  # type: ignore
-                "url": stripe_session.url,  # type: ignore
-            }
-        ),
-        201,
-    )
+        return (
+            jsonify(
+                {
+                    "checkout_session_id": stripe_session.id,  # type: ignore
+                    "url": stripe_session.url,  # type: ignore
+                }
+            ),
+            201,
+        )
+    except Exception as e:
+        logger.error(f"Error creating checkout session: {e}")
+        return jsonify({"error": "internal server error"}), 500
 
 
 @bp.get("/subscriptions")

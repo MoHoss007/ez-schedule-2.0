@@ -68,8 +68,8 @@ class Subscription(Base):
     # When billing is considered to start (usually season_start)
     billing_start_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
 
     deleted_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -115,7 +115,7 @@ class SubscriptionTeamChange(Base):
     old_team_limit = Column(Integer, nullable=False)
     new_team_limit = Column(Integer, nullable=False)
 
-    changed_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    changed_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
     changed_by_user_id = Column(
         Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
     )

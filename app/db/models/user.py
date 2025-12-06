@@ -16,7 +16,7 @@ class User(Base):
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
 
     # Relationships
     sessions = relationship(
@@ -69,8 +69,8 @@ class Session(Base):
         index=True,
     )
 
-    created_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
-    last_seen_at = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
+    last_seen_at = Column(DateTime(timezone=True), default=now_utc(), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
 
     # Store only a hash of the refresh token (or jti)
