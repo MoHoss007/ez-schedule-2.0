@@ -40,7 +40,7 @@ def _get_current_session_hash() -> Optional[str]:
 # ------------ Endpoints ------------
 
 
-@bp.get("/sessions")
+@bp.route("/sessions", methods=["GET"], strict_slashes=False)
 def list_sessions():
     """
     List all active sessions for the current user.
@@ -108,7 +108,7 @@ def list_sessions():
     return jsonify(result)
 
 
-@bp.delete("/sessions/<int:session_id>")
+@bp.route("/sessions/<int:session_id>", methods=["DELETE"], strict_slashes=False)
 def revoke_session(session_id: int):
     """
     Revoke a specific session (log out that device).
@@ -140,7 +140,7 @@ def revoke_session(session_id: int):
     return jsonify({"ok": True, "revoked_session_id": session_id})
 
 
-@bp.delete("/sessions")
+@bp.route("/sessions", methods=["DELETE"], strict_slashes=False)
 def revoke_all_sessions():
     """
     Revoke ALL sessions for the current user.

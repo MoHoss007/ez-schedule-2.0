@@ -23,7 +23,7 @@ def _parse_after_param():
         return None
 
 
-@bp.get("/")
+@bp.route("", methods=["GET"], strict_slashes=False)
 def list_league_seasons():
     """
     GET /api/v1/league-seasons
@@ -68,7 +68,7 @@ def list_league_seasons():
     return jsonify(results)
 
 
-@bp.get("/<int:league_season_id>")
+@bp.route("/<int:league_season_id>", methods=["GET"], strict_slashes=False)
 def get_league_season(league_season_id: int):
     """
     GET /api/v1/league-seasons/<league_season_id>

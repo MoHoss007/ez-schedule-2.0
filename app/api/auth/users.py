@@ -111,7 +111,7 @@ def _session_ttl() -> timedelta:
 # ------------ Endpoints ------------
 
 
-@bp.post("/signup")
+@bp.route("/signup", methods=["POST"], strict_slashes=False)
 def signup():
     """
     Body: { "email": "...", "password": "...", "username": "..." }
@@ -171,7 +171,7 @@ def signup():
         return _set_auth_cookies(resp, access, refresh), 201
 
 
-@bp.post("/login")
+@bp.route("/login", methods=["POST"], strict_slashes=False)
 def login():
     """
     Body: { "email": "...", "password": "..." }
@@ -270,7 +270,7 @@ def refresh():
     return _set_auth_cookies(resp, access, rtoken)
 
 
-@bp.get("/me")
+@bp.route("/me", methods=["GET"], strict_slashes=False)
 def me():
     """
     Returns the current user's profile (via access token).
@@ -309,7 +309,7 @@ def me():
         )
 
 
-@bp.post("/logout")
+@bp.route("/logout", methods=["POST"], strict_slashes=False)
 def logout():
     """
     Clears auth cookies and revokes the matching Session row (if any).

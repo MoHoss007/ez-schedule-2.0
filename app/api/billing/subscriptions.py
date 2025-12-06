@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 bp = Blueprint("billing_api", __name__)
 
 
-@bp.post("/checkout-sessions")
+@bp.route("/checkout-sessions", methods=["POST"], strict_slashes=False)
 def create_checkout_session():
     """
     Create a Stripe Checkout Session for a subscription tied to a specific league season.
@@ -153,7 +153,7 @@ def create_checkout_session():
         return jsonify({"error": "internal server error"}), 500
 
 
-@bp.get("/subscriptions")
+@bp.route("/subscriptions", methods=["GET"], strict_slashes=False)
 def list_subscriptions():
     """
     Query params:
@@ -210,7 +210,7 @@ def list_subscriptions():
     return jsonify(results)
 
 
-@bp.get("/subscriptions/<int:sub_id>")
+@bp.route("/subscriptions/<int:sub_id>", methods=["GET"], strict_slashes=False)
 def get_subscription(sub_id: int):
     with get_session() as session:
         s = (
@@ -251,7 +251,7 @@ def get_subscription(sub_id: int):
     return jsonify(result)
 
 
-@bp.patch("/subscriptions/<int:sub_id>")
+@bp.route("/subscriptions/<int:sub_id>", methods=["PATCH"], strict_slashes=False)
 def update_subscription(sub_id: int):
     """
     PATCH /api/v1/billing/subscriptions/<sub_id>

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 bp = Blueprint("stripe", __name__)
 
 
-@bp.post("/webhook")
+@bp.route("/webhook", methods=["POST"], strict_slashes=False)
 def webhook():
     payload = request.data
     sig = request.headers.get("Stripe-Signature")
