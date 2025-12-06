@@ -1,6 +1,7 @@
 from flask import current_app
 from cryptography.fernet import Fernet
 import base64, hashlib, os
+from datetime import datetime, timezone
 
 
 def _get_fernet() -> Fernet:
@@ -20,3 +21,9 @@ def encrypt(s: str) -> str:
 
 def decrypt(s: str) -> str:
     return _get_fernet().decrypt(s.encode("utf-8")).decode("utf-8")
+
+
+def utc_aware(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)

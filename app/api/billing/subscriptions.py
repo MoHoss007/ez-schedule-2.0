@@ -15,7 +15,7 @@ from app.db.models import (
     LeagueSeason,
     LeagueSeasonProduct,
 )
-from app.api.utils import _cfg
+from app.api.utils import _cfg, utc_aware
 import logging
 
 logger = logging.getLogger(__name__)
@@ -73,11 +73,10 @@ def create_checkout_session():
             logger.info(
                 f"Subscription open at: {league_season.subscription_open_at}, close at: {league_season.subscription_close_at}"
             )
-            if not (
-                league_season.subscription_open_at  # type: ignore
-                <= now
-                <= league_season.subscription_close_at
-            ):
+
+            open_at = utc_aware(league_season.subscription_open_at)  # type: ignore
+            close_at = utc_aware(league_season.subscription_close_at)  # type: ignore
+            if not (open_at <= now <= close_at):
                 return (
                     jsonify(
                         {
